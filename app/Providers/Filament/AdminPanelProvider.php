@@ -76,23 +76,23 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make()
                     ->label('Principal')
-                    ->icon('heroicon-o-home')
+                    // ->icon('heroicon-o-home')
                     ->collapsed(),
                 NavigationGroup::make()
                     ->label('Gestion')
-                    ->icon('heroicon-o-user-group')
+                    // ->icon('heroicon-o-user-group')
                     ->collapsed(),
                 NavigationGroup::make()
                     ->label('Ventes')
-                    ->icon('heroicon-o-shopping-bag')
+                    // ->icon('heroicon-o-shopping-bag')
                     ->collapsed(),
                 NavigationGroup::make()
                     ->label('Finance')
-                    ->icon('heroicon-o-banknotes')
+                    // ->icon('heroicon-o-banknotes')
                     ->collapsed(),
                 NavigationGroup::make()
                     ->label('Système')
-                    ->icon('heroicon-o-cog-6-tooth')
+                    // ->icon('heroicon-o-cog-6-tooth')
                     ->collapsed(),
             ])
             ->middleware([

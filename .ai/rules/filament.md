@@ -54,7 +54,9 @@ class ServiceResource extends Resource
 
 - **Schema Class**: Use `Filament\Schemas\Schema` instead of `Filament\Forms\Form`.
 - **Method Signature**: `public static function configure(Schema $schema): Schema`
-- **Components**: `Filament\Forms\Components\*` (`TextInput`, `Select`, `FileUpload`, `DatePicker`, `Textarea`, `Toggle`).
+- **Layout Containers**: Use `Filament\Schemas\Components\*` (`Section`, `Grid`, `Group`, `Fieldset`, `Tabs`, `Wizard`).
+- **Inputs & Fields**: Use `Filament\Forms\Components\*` (`TextInput`, `Select`, `FileUpload`, `DatePicker`, `Textarea`, `Toggle`).
+- **Utilities (`Get` / `Set`)**: Use `Filament\Schemas\Components\Utilities\Get` and `Filament\Schemas\Components\Utilities\Set` (replaces legacy `Filament\Forms\Get` / `Filament\Forms\Set`).
 - **Relationships**: Always use `Select::make('foreignId')->relationship('relationName', 'titleAttribute')->searchable()->preload()` for foreign key inputs.
 
 Example:
