@@ -2,11 +2,12 @@
 
 namespace App\Providers\Filament;
 
-use Filament\Http\Middleware\Authenticate;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -29,9 +30,16 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->registration()
             ->colors([
                 'primary' => Color::Amber,
+                'danger' => Color::Rose,
+                'gray' => Color::Slate,
+                'info' => Color::Sky,
+                'success' => Color::Emerald,
+                'warning' => Color::Amber,
             ])
+            ->brandName('💈 BarberShop Pro')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -41,6 +49,51 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,
+            ])
+            ->collapsibleNavigationGroups()
+            ->globalSearchDebounce('500ms')
+            ->pages([
+                // Dashboard::class,
+                // Statistics::class,
+                // Reports::class,
+            ])
+            ->widgets([
+                // RevenueStatsWidget::class,
+                // PendingAppointmentsWidget::class,
+                // ExpenseSummaryWidget::class,
+                // CashRegisterStatusWidget::class,
+                // TodayAppointmentsWidget::class,
+                // RevenueChartWidget::class,
+                // TopServicesWidget::class,
+                // RecentSalesWidget::class,
+                // LowStockAlertWidget::class,
+                // Widgets\AccountWidget::class,
+            ])
+            //  ->renderHook(
+            //     'panels::body.end',
+            //     fn () => Blade::render('<link rel="stylesheet" href="/css/filament-custom.css">'),
+            // )
+            ->navigationGroups([
+                NavigationGroup::make()
+                    ->label('Principal')
+                    ->icon('heroicon-o-home')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Gestion')
+                    ->icon('heroicon-o-user-group')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Ventes')
+                    ->icon('heroicon-o-shopping-bag')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Finance')
+                    ->icon('heroicon-o-banknotes')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Système')
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->collapsed(),
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -54,7 +107,7 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->plugins([
-                FilamentShieldPlugin::make(),
+                // FilamentShieldPlugin::make(),
             ])
             ->authMiddleware([
                 Authenticate::class,
