@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Appointments\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -14,7 +15,6 @@ class AppointmentsTable
 {
     public static function configure(Table $table): Table
     {
-
         return $table
             ->columns([
                 TextColumn::make('client.firstName')
@@ -88,6 +88,31 @@ class AppointmentsTable
                     ->relationship('service', 'name'),
             ])
             ->recordActions([
+                Action::make('confirm')
+                    ->label('Confirmer')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('info')
+                    ->visible(fn ($record) => $record->status === 'pending')
+                    ->action(fn ($record) => $record->update(['status' => 'confirmed'])),
+                Action::make('start')
+                    ->label('Démarrer')
+                    ->icon('heroicon-o-play')
+                    ->color('info')
+                    ->visible(fn ($record) => $record->status === 'confirmed')
+                    ->action(fn ($record) => $record->update(['status' => 'in_progress'])),
+                Action::make('complete')
+                    ->label('Terminer')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->status === 'in_progress')
+                    ->action(fn ($record) => $record->update(['status' => 'completed'])),
+                Action::make('cancel')
+                    ->label('Annuler')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('danger')
+                    ->visible(fn ($record) => ! in_array($record->status, ['completed', 'cancelled']))
+                    ->requiresConfirmation()
+                    ->action(fn ($record) => $record->update(['status' => 'cancelled'])),
                 ViewAction::make(),
                 EditAction::make(),
             ])

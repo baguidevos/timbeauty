@@ -49,8 +49,8 @@ class RevenueStatsWidget extends BaseWidget
     private function getTodayChart(): array
     {
         return Sale::whereDate('created_at', now()->toDateString())
-            ->selectRaw('EXTRACT(HOUR FROM created_at) as hour, SUM(total) as total')
-            ->groupByRaw('EXTRACT(HOUR FROM created_at)')
+            ->selectRaw("strftime('%H', created_at) as hour, SUM(total) as total")
+            ->groupByRaw("strftime('%H', created_at)")
             ->orderBy('hour')
             ->pluck('total')
             ->take(7)

@@ -19,6 +19,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -29,6 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
             ->registration()
             ->colors([
@@ -69,10 +71,10 @@ class AdminPanelProvider extends PanelProvider
                 // LowStockAlertWidget::class,
                 // Widgets\AccountWidget::class,
             ])
-            //  ->renderHook(
-            //     'panels::body.end',
-            //     fn () => Blade::render('<link rel="stylesheet" href="/css/filament-custom.css">'),
-            // )
+            ->renderHook(
+                'panels::body.end',
+                fn () => Blade::render('<link rel="stylesheet" href="/css/filament-custom.css">'),
+            )
             ->navigationGroups([
                 NavigationGroup::make()
                     ->label('Principal')

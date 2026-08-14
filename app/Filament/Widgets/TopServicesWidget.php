@@ -2,57 +2,55 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Appointment;
+use App\Models\SaleItem;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Carbon;
 
 class TopServicesWidget extends ChartWidget
 {
     protected static ?int $sort = 6;
 
-    protected ?string $heading = 'Top 5 services';
+    protected ?string $heading = 'Top 5 prestations du mois';
 
     protected string $color = 'primary';
 
-    protected int|string|array $columnSpan = 'half';
-
     public function getData(): array
     {
-        $services = Appointment::query()
-            ->selectRaw('serviceId, COUNT(*) as count')
-            ->with('service')
-            ->groupBy('serviceId')
-            ->orderByDesc('count')
+        $monthStart = Carbon::now()->startOfMonth()->toDateString();
+
+        $topServices = SaleItem::query()
+            ->selectRaw('name, SUM(quantity) as total_count, SUM(total) as total_revenue')
+            ->where('type', 'service')
+            ->whereHas('sale', function ($query) use ($monthStart) {
+                $query->where('status', 'completed')
+                    ->whereDate('created_at', '>=', $monthStart);
+            })
+            ->groupBy('name')
+            ->orderByDesc('total_revenue')
             ->limit(5)
             ->get();
 
         $labels = [];
         $data = [];
 
-        foreach ($services as $appointment) {
-            $labels[] = $appointment->service?->name ?? 'Inconnu';
-            $data[] = $appointment->count;
+        foreach ($topServices as $service) {
+            $labels[] = $service->name;
+            $data[] = (float) $service->total_revenue;
         }
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Nombre de rendez-vous',
+                    'label' => 'Revenu (FCFA)',
                     'data' => $data,
                     'backgroundColor' => [
-                        'rgba(245, 158, 11, 0.7)',
+                        'rgba(245, 158, 11, 0.85)',
+                        'rgba(245, 158, 11, 0.70)',
                         'rgba(245, 158, 11, 0.55)',
-                        'rgba(245, 158, 11, 0.4)',
-                        'rgba(245, 158, 11, 0.3)',
-                        'rgba(245, 158, 11, 0.2)',
+                        'rgba(245, 158, 11, 0.40)',
+                        'rgba(245, 158, 11, 0.25)',
                     ],
-                    'borderColor' => [
-                        'rgba(245, 158, 11, 1)',
-                        'rgba(245, 158, 11, 0.8)',
-                        'rgba(245, 158, 11, 0.6)',
-                        'rgba(245, 158, 11, 0.5)',
-                        'rgba(245, 158, 11, 0.4)',
-                    ],
-                    'borderWidth' => 1,
+                    'borderRadius' => 4,
                 ],
             ],
             'labels' => $labels,
@@ -71,6 +69,13 @@ class TopServicesWidget extends ChartWidget
             'plugins' => [
                 'legend' => [
                     'display' => false,
+                ],
+            ],
+            'scales' => [
+                'x' => [
+                    'ticks' => [
+                        'callback' => 'function(value) { return (value / 1000).toFixed(0) + "k"; }',
+                    ],
                 ],
             ],
         ];

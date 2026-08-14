@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Appointments\Pages;
 
 use App\Filament\Resources\Appointments\AppointmentResource;
+use App\Filament\Resources\Appointments\Widgets\AppointmentPlannerWidget;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
@@ -14,6 +15,13 @@ class ListAppointments extends ListRecords
     {
         return [
             Actions\CreateAction::make()->label('Nouveau rendez-vous'),
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            AppointmentPlannerWidget::class,
         ];
     }
 }
