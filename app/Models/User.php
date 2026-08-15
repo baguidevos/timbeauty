@@ -20,7 +20,6 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
-        'role',
         'phone',
         'active',
     ];
@@ -41,8 +40,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        // return $this->active && in_array($this->role, ['admin', 'barber', 'cashier']);
-        return true;
+        return (bool) $this->active;
     }
 
     public function barber()
@@ -67,17 +65,29 @@ class User extends Authenticatable implements FilamentUser
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        if (method_exists($this, 'hasRole')) {
+            return $this->hasRole('admin') || $this->hasRole('super_admin');
+        }
+
+        return true;
     }
 
     public function isBarber(): bool
     {
-        return $this->role === 'barber';
+        if (method_exists($this, 'hasRole')) {
+            return $this->hasRole('barber');
+        }
+
+        return $this->barber()->exists();
     }
 
     public function isCashier(): bool
     {
-        return $this->role === 'cashier';
+        if (method_exists($this, 'hasRole')) {
+            return $this->hasRole('cashier');
+        }
+
+        return ! $this->barber()->exists();
     }
 
     /**

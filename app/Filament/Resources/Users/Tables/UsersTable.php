@@ -26,22 +26,6 @@ class UsersTable
                     ->label('Email')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('role')
-                    ->label('Rôle')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'admin' => 'danger',
-                        'barber' => 'info',
-                        'cashier' => 'success',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'admin' => 'Administrateur',
-                        'barber' => 'Coiffeur',
-                        'cashier' => 'Caissier',
-                        default => $state,
-                    })
-                    ->sortable(),
                 TextColumn::make('phone')
                     ->label('Téléphone')
                     ->searchable()
@@ -57,13 +41,6 @@ class UsersTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('role')
-                    ->label('Rôle')
-                    ->options([
-                        'admin' => 'Administrateur',
-                        'barber' => 'Coiffeur',
-                        'cashier' => 'Caissier',
-                    ]),
                 Tables\Filters\TernaryFilter::make('active')
                     ->label('Actif'),
             ])

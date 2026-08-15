@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -34,15 +33,6 @@ class UserForm
                             ->required(fn (string $context): bool => $context === 'create')
                             ->minLength(8)
                             ->maxLength(255),
-                        Select::make('role')
-                            ->label('Rôle')
-                            ->options([
-                                'admin' => 'Administrateur',
-                                'barber' => 'Coiffeur',
-                                'cashier' => 'Caissier',
-                            ])
-                            ->required()
-                            ->native(false),
                         TextInput::make('phone')
                             ->label('Téléphone')
                             ->tel()

@@ -64,11 +64,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->collapsibleNavigationGroups()
             ->globalSearchDebounce('500ms')
-            ->pages([
-                // Dashboard::class,
-                // Statistics::class,
-                // Reports::class,
-            ])
             ->widgets([
                 // RevenueStatsWidget::class,
                 // PendingAppointmentsWidget::class,
