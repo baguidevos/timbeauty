@@ -55,4 +55,19 @@ class Payroll extends Model
     {
         return $this->status === 'paid';
     }
+
+    public function isPartiallyPaid(): bool
+    {
+        return $this->status === 'partially_paid';
+    }
+
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->salaryPayments->sum('amount');
+    }
+
+    public function getRemainingAmountAttribute(): float
+    {
+        return max(0, (float) $this->netSalary - $this->total_paid);
+    }
 }

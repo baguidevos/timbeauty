@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Payrolls;
 
 use App\Filament\Resources\Payrolls\Schemas\PayrollForm;
 use App\Filament\Resources\Payrolls\Tables\PayrollsTable;
+use App\Filament\Resources\Payrolls\Widgets\PayrollChartWidget;
+use App\Filament\Resources\Payrolls\Widgets\PayrollStatsWidget;
 use App\Models\Payroll;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -38,13 +40,21 @@ class PayrollResource extends Resource
         return [];
     }
 
+    public static function getWidgets(): array
+    {
+        return [
+            PayrollStatsWidget::class,
+            PayrollChartWidget::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListPayrolls::route('/'),
-            'create' => Pages\CreatePayroll::route('/create'),
-            'view' => Pages\ViewPayroll::route('/{record}'),
-            'edit' => Pages\EditPayroll::route('/{record}/edit'),
+            // 'create' => Pages\CreatePayroll::route('/create'),
+            // 'view' => Pages\ViewPayroll::route('/{record}'),
+            // 'edit' => Pages\EditPayroll::route('/{record}/edit'),
         ];
     }
 }
