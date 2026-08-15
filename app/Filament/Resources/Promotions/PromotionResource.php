@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Promotions;
 
+use App\Filament\Clusters\Marketing;
 use App\Filament\Resources\Promotions\Schemas\PromotionForm;
 use App\Filament\Resources\Promotions\Tables\PromotionsTable;
 use App\Models\Promotion;
@@ -13,11 +14,13 @@ class PromotionResource extends Resource
 {
     protected static ?string $model = Promotion::class;
 
+    protected static ?string $cluster = Marketing::class;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-tag';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static ?string $navigationLabel = 'Promotions & Offres';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $modelLabel = 'Promotion';
 
@@ -42,9 +45,6 @@ class PromotionResource extends Resource
     {
         return [
             'index' => Pages\ListPromotions::route('/'),
-            'create' => Pages\CreatePromotion::route('/create'),
-            'view' => Pages\ViewPromotion::route('/{record}'),
-            'edit' => Pages\EditPromotion::route('/{record}/edit'),
         ];
     }
 }

@@ -13,6 +13,8 @@ class LoyaltyPointTransactionResource extends Resource
 {
     protected static ?string $model = LoyaltyPointTransaction::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

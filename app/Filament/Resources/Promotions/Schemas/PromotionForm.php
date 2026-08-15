@@ -7,71 +7,134 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\ToggleButtons;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class PromotionForm
 {
     public static function configure(Schema $schema): Schema
     {
-
         return $schema
             ->schema([
-                Section::make('Informations de la promotion')
-                    ->schema([
-                        TextInput::make('name')
-                            ->label('Nom')
-                            ->required()
-                            ->maxLength(100),
-                        Textarea::make('description')
-                            ->label('Description')
-                            ->maxLength(500),
-                        Select::make('type')
-                            ->label('Type')
-                            ->options([
-                                'percentage' => 'Pourcentage',
-                                'fixed' => 'Montant fixe',
-                                'free_service' => 'Prestation gratuite',
+                Tabs::make('PromotionTabs')
+                    ->tabs([
+                        Tab::make('Offre & Réduction')
+                            ->icon('heroicon-o-tag')
+                            ->schema([
+                                TextInput::make('name')
+                                    ->label('Nom de la promotion')
+                                    ->placeholder('Ex: Offre Rentrée, Promo Happy Hour, Pack VIP...')
+                                    ->required()
+                                    ->maxLength(100)
+                                    ->columnSpanFull(),
+
+                                ToggleButtons::make('type')
+                                    ->label('Type de réduction')
+                                    ->options([
+                                        'percentage' => 'Pourcentage (%)',
+                                        'fixed' => 'Montant fixe (FCFA)',
+                                        'free_service' => 'Prestation offerte',
+                                    ])
+                                    ->colors([
+                                        'percentage' => 'warning',
+                                        'fixed' => 'success',
+                                        'free_service' => 'primary',
+                                    ])
+                                    ->icons([
+                                        'percentage' => 'heroicon-o-receipt-percent',
+                                        'fixed' => 'heroicon-o-banknotes',
+                                        'free_service' => 'heroicon-o-gift',
+                                    ])
+                                    ->default('percentage')
+                                    ->required()
+                                    ->live()
+                                    ->inline()
+                                    ->columnSpanFull(),
+
+                                TextInput::make('value')
+                                    ->label('Valeur de la réduction')
+                                    ->numeric()
+                                    ->required()
+                                    ->minValue(0)
+                                    ->suffix(fn (Get $get) => $get('type') === 'percentage' ? '%' : ($get('type') === 'fixed' ? 'FCFA' : ''))
+                                    ->hidden(fn (Get $get) => $get('type') === 'free_service')
+                                    ->default(10),
+
+                                Select::make('services')
+                                    ->label('Prestations éligibles')
+                                    ->relationship('services', 'name')
+                                    ->multiple()
+                                    ->preload()
+                                    ->searchable()
+                                    ->placeholder('Toutes les prestations si vide')
+                                    ->helperText('Laissez vide pour appliquer la promotion à l\'ensemble des prestations.')
+                                    ->columnSpanFull(),
+
+                                DatePicker::make('startDate')
+                                    ->label('Date de début')
+                                    ->default(now())
+                                    ->native(false),
+
+                                DatePicker::make('endDate')
+                                    ->label('Date de fin')
+                                    ->native(false),
+
+                                Textarea::make('description')
+                                    ->label('Description & Détails de l\'offre')
+                                    ->placeholder('Détails de l\'opération marketing...')
+                                    ->maxLength(500)
+                                    ->columnSpanFull(),
                             ])
-                            ->required()
-                            ->native(false),
-                        TextInput::make('value')
-                            ->label('Valeur')
-                            ->numeric()
-                            ->required()
-                            ->minValue(0),
-                        DatePicker::make('startDate')
-                            ->label('Date de début'),
-                        DatePicker::make('endDate')
-                            ->label('Date de fin'),
-                    ])->columns(2),
-                Section::make('Conditions')
-                    ->schema([
-                        TextInput::make('minVisits')
-                            ->label('Visites minimum')
-                            ->numeric()
-                            ->default(0),
-                        Toggle::make('forLoyalOnly')
-                            ->label('Clients fidèles uniquement')
-                            ->default(false),
-                        TextInput::make('maxUsages')
-                            ->label('Utilisations maximum')
-                            ->numeric(),
-                        TextInput::make('currentUsages')
-                            ->label('Utilisations actuelles')
-                            ->numeric()
-                            ->default(0),
-                        Select::make('status')
-                            ->label('Statut')
-                            ->options([
-                                'active' => 'Active',
-                                'inactive' => 'Inactive',
-                                'expired' => 'Expirée',
+                            ->columns(2),
+
+                        Tab::make('Conditions & Quotas')
+                            ->icon('heroicon-o-adjustments-horizontal')
+                            ->schema([
+                                ToggleButtons::make('status')
+                                    ->label('Statut de l\'offre')
+                                    ->options([
+                                        'active' => 'Active',
+                                        'inactive' => 'Désactivée',
+                                    ])
+                                    ->colors([
+                                        'active' => 'success',
+                                        'inactive' => 'danger',
+                                    ])
+                                    ->icons([
+                                        'active' => 'heroicon-o-check-circle',
+                                        'inactive' => 'heroicon-o-x-circle',
+                                    ])
+                                    ->default('active')
+                                    ->inline()
+                                    ->required()
+                                    ->columnSpanFull(),
+
+                                Toggle::make('forLoyalOnly')
+                                    ->label('Réservée exclusivement aux clients fidèles')
+                                    ->helperText('Seuls les clients avec le badge "Fidèle" pourront bénéficier de cette offre.')
+                                    ->default(false)
+                                    ->columnSpanFull(),
+
+                                TextInput::make('minVisits')
+                                    ->label('Visites antérieures minimum requises')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->default(0)
+                                    ->helperText('0 = accessible sans condition d\'ancienneté'),
+
+                                TextInput::make('maxUsages')
+                                    ->label('Plafond d\'utilisations global')
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->placeholder('Illimité si vide')
+                                    ->helperText('Nombre total de fois où cette promo peut être utilisée.'),
                             ])
-                            ->default('active')
-                            ->required()
-                            ->native(false),
-                    ])->columns(2),
+                            ->columns(2),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 }

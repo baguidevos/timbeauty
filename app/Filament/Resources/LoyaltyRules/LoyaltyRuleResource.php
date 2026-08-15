@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\LoyaltyRules;
 
+use App\Filament\Clusters\Marketing;
 use App\Filament\Resources\LoyaltyRules\Schemas\LoyaltyRuleForm;
 use App\Filament\Resources\LoyaltyRules\Tables\LoyaltyRulesTable;
 use App\Models\LoyaltyRule;
@@ -13,15 +14,17 @@ class LoyaltyRuleResource extends Resource
 {
     protected static ?string $model = LoyaltyRule::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-square-3-stack-3d';
+    protected static ?string $cluster = Marketing::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-gift';
 
-    protected static ?int $navigationSort = 52;
+    protected static ?string $navigationLabel = 'Programme de Fidélité';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Règle de fidélité';
 
-    protected static ?string $pluralModelLabel = 'Règles de fidélité';
+    protected static ?string $pluralModelLabel = 'Programme de Fidélité';
 
     public static function form(Schema $schema): Schema
     {
@@ -42,8 +45,6 @@ class LoyaltyRuleResource extends Resource
     {
         return [
             'index' => Pages\ListLoyaltyRules::route('/'),
-            'create' => Pages\CreateLoyaltyRule::route('/create'),
-            'edit' => Pages\EditLoyaltyRule::route('/{record}/edit'),
         ];
     }
 }
