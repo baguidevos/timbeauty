@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Suppliers\Tables;
 
+use App\Helpers\FormatHelper;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -14,7 +15,6 @@ class SuppliersTable
 {
     public static function configure(Table $table): Table
     {
-
         return $table
             ->columns([
                 TextColumn::make('name')
@@ -24,14 +24,33 @@ class SuppliersTable
                 TextColumn::make('contactName')
                     ->label('Contact')
                     ->searchable()
+                    ->default('-')
                     ->toggleable(),
                 TextColumn::make('phone')
                     ->label('Téléphone')
-                    ->searchable(),
+                    ->searchable()
+                    ->default('-'),
                 TextColumn::make('email')
                     ->label('Email')
                     ->searchable()
+                    ->default('-')
                     ->toggleable(),
+                TextColumn::make('paymentTerms')
+                    ->label('Conditions')
+                    ->searchable()
+                    ->default('-')
+                    ->toggleable(),
+                TextColumn::make('purchase_orders_count')
+                    ->label('Cmds')
+                    ->counts('purchaseOrders')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('purchase_orders_sum_total_amount')
+                    ->label('Montant total')
+                    ->sum('purchaseOrders', 'totalAmount')
+                    ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state ?? 0))
+                    ->sortable()
+                    ->alignEnd(),
                 TextColumn::make('status')
                     ->label('Statut')
                     ->badge()
@@ -46,12 +65,8 @@ class SuppliersTable
                         default => $state,
                     })
                     ->sortable(),
-                TextColumn::make('products_count')
-                    ->label('Produits')
-                    ->counts('products')
-                    ->numeric()
-                    ->toggleable(),
             ])
+            ->searchPlaceholder('Rechercher un fournisseur...')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Statut')
@@ -61,8 +76,10 @@ class SuppliersTable
                     ]),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->slideOver(),
+                EditAction::make()
+                    ->slideOver(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

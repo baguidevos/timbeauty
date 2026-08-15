@@ -33,9 +33,14 @@ class ProductsTable
                     ->alignEnd(),
                 TextColumn::make('stockQuantity')
                     ->label('Stock')
-                    ->numeric()
+                    ->badge()
+                    ->icon(fn ($record) => $record->stockQuantity <= $record->minStockLevel ? 'heroicon-o-exclamation-triangle' : null)
                     ->color(fn ($record) => $record->stockQuantity <= $record->minStockLevel ? 'danger' : 'success')
+                    ->extraAttributes(fn ($record) => $record->stockQuantity <= $record->minStockLevel ? ['class' => 'animate-pulse font-bold'] : [])
+                    ->extraCellAttributes(fn ($record) => $record->stockQuantity <= $record->minStockLevel ? ['class' => 'animate-pulse'] : [])
+                    ->numeric()
                     ->sortable(),
+
                 TextColumn::make('category.name')
                     ->label('Catégorie')
                     ->searchable()
@@ -74,9 +79,12 @@ class ProductsTable
                     ->relationship('supplier', 'name'),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->slideOver(),
+                EditAction::make()
+                    ->slideOver(),
             ])
+
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

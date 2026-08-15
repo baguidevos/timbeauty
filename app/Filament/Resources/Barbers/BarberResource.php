@@ -42,7 +42,7 @@ class BarberResource extends Resource
     {
         return [
             'index' => Pages\ListBarbers::route('/'),
-            'create' => Pages\CreateBarber::route('/create'),
+            // 'create' => Pages\CreateBarber::route('/create'),
             'view' => Pages\ViewBarber::route('/{record}'),
             'edit' => Pages\EditBarber::route('/{record}/edit'),
         ];

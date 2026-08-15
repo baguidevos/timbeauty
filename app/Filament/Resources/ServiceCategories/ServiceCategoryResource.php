@@ -8,6 +8,7 @@ use App\Models\ServiceCategory;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Override;
 
 class ServiceCategoryResource extends Resource
 {
@@ -45,5 +46,11 @@ class ServiceCategoryResource extends Resource
             'create' => Pages\CreateServiceCategory::route('/create'),
             'edit' => Pages\EditServiceCategory::route('/{record}/edit'),
         ];
+    }
+
+    #[Override]
+    public static function canAccess(): bool
+    {
+        return false;
     }
 }

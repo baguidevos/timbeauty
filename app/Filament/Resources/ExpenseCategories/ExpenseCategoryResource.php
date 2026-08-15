@@ -8,6 +8,7 @@ use App\Models\ExpenseCategory;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Override;
 
 class ExpenseCategoryResource extends Resource
 {
@@ -22,6 +23,12 @@ class ExpenseCategoryResource extends Resource
     protected static ?string $modelLabel = 'Catégorie de dépense';
 
     protected static ?string $pluralModelLabel = 'Catégories de dépenses';
+
+    #[Override]
+    public static function canAccess(): bool
+    {
+        return false;
+    }
 
     public static function form(Schema $schema): Schema
     {

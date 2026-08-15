@@ -38,6 +38,14 @@ class ClientsTable
                     ->label('Visites')
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('firstVisitDate')
+                    ->label('Premier visite')
+                    ->date('d/m/Y')
+                    ->sortable(),
+                TextColumn::make('lastVisitDate')
+                    ->label('Dernière visite')
+                    ->default(fn ($record) => $record->lastVisitDate ?? 'N/D')
+                    ->sortable(),
                 TextColumn::make('totalSpent')
                     ->label('Total dépensé')
                     ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state))

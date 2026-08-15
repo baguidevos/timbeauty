@@ -15,33 +15,42 @@ class PurchaseOrdersTable
 {
     public static function configure(Table $table): Table
     {
-
         return $table
             ->columns([
                 TextColumn::make('reference')
                     ->label('Référence')
                     ->searchable()
+                    ->color('warning')
+                    ->weight('bold')
                     ->sortable(),
                 TextColumn::make('supplier.name')
                     ->label('Fournisseur')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('orderDate')
-                    ->label('Date de commande')
+                    ->label('Date')
                     ->date('d/m/Y')
                     ->sortable(),
-                TextColumn::make('expectedDate')
-                    ->label('Date prévue')
-                    ->date('d/m/Y')
-                    ->toggleable(),
                 TextColumn::make('totalAmount')
-                    ->label('Montant total')
-                    ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state))
+                    ->label('Montant')
+                    ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state ?? 0))
+                    ->sortable()
+                    ->alignEnd(),
+                TextColumn::make('paidAmount')
+                    ->label('Payé')
+                    ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state ?? 0))
                     ->sortable()
                     ->alignEnd(),
                 TextColumn::make('status')
                     ->label('Statut')
                     ->badge()
+                    ->icon(fn (string $state): string => match ($state) {
+                        'pending' => 'heroicon-o-clock',
+                        'ordered' => 'heroicon-o-paper-airplane',
+                        'received' => 'heroicon-o-check-circle',
+                        'cancelled' => 'heroicon-o-x-circle',
+                        default => 'heroicon-o-information-circle',
+                    })
                     ->color(fn (string $state): string => match ($state) {
                         'pending' => 'warning',
                         'ordered' => 'info',
@@ -51,19 +60,20 @@ class PurchaseOrdersTable
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'pending' => 'En attente',
-                        'ordered' => 'Commandée',
+                        'ordered' => 'Envoyée',
                         'received' => 'Reçue',
                         'cancelled' => 'Annulée',
                         default => $state,
                     })
                     ->sortable(),
             ])
+            ->searchPlaceholder('Rechercher une commande...')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Statut')
                     ->options([
                         'pending' => 'En attente',
-                        'ordered' => 'Commandée',
+                        'ordered' => 'Envoyée',
                         'received' => 'Reçue',
                         'cancelled' => 'Annulée',
                     ]),
@@ -72,8 +82,10 @@ class PurchaseOrdersTable
                     ->relationship('supplier', 'name'),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->slideOver(),
+                EditAction::make()
+                    ->slideOver(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

@@ -2,6 +2,9 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\Expenses\Pages\ListExpenses;
+use App\Filament\Resources\Products\Pages\ListProducts;
+use App\Filament\Resources\Services\Pages\ListServices;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -12,8 +15,11 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
+use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -32,7 +38,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
+            ->spa(hasPrefetching: true)
             ->registration()
+            ->maxContentWidth(Width::Full)
             ->colors([
                 'primary' => Color::Amber,
                 'danger' => Color::Rose,
@@ -42,7 +50,9 @@ class AdminPanelProvider extends PanelProvider
                 'warning' => Color::Amber,
             ])
             ->brandName('💈 BarberShop Pro')
+            ->discoverClusters(in: app_path('Filament/Clusters'), for: 'App\Filament\Clusters')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
+
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
@@ -72,9 +82,25 @@ class AdminPanelProvider extends PanelProvider
                 // Widgets\AccountWidget::class,
             ])
             ->renderHook(
+                PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE,
+                fn (): View => view('filament.resources.services.components.category-badges'),
+                scopes: ListServices::class,
+            )
+            ->renderHook(
+                PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE,
+                fn (): View => view('filament.resources.products.components.product-category-badges'),
+                scopes: ListProducts::class,
+            )
+            ->renderHook(
+                PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE,
+                fn (): View => view('filament.resources.expenses.components.expense-category-badges'),
+                scopes: ListExpenses::class,
+            )
+            ->renderHook(
                 'panels::body.end',
                 fn () => Blade::render('<link rel="stylesheet" href="/css/filament-custom.css">'),
             )
+
             ->navigationGroups([
                 NavigationGroup::make()
                     ->label('Principal')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseOrders;
 
+use App\Filament\Clusters\OrderManagement;
 use App\Filament\Resources\PurchaseOrders\Schemas\PurchaseOrderForm;
 use App\Filament\Resources\PurchaseOrders\Tables\PurchaseOrdersTable;
 use App\Models\PurchaseOrder;
@@ -13,11 +14,13 @@ class PurchaseOrderResource extends Resource
 {
     protected static ?string $model = PurchaseOrder::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $cluster = OrderManagement::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Ventes';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
 
-    protected static ?int $navigationSort = 35;
+    protected static ?string $navigationLabel = 'Commandes';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Commande d\'achat';
 
@@ -42,7 +45,7 @@ class PurchaseOrderResource extends Resource
     {
         return [
             'index' => Pages\ListPurchaseOrders::route('/'),
-            'create' => Pages\CreatePurchaseOrder::route('/create'),
+            // 'create' => Pages\CreatePurchaseOrder::route('/create'),
             'view' => Pages\ViewPurchaseOrder::route('/{record}'),
             'edit' => Pages\EditPurchaseOrder::route('/{record}/edit'),
         ];

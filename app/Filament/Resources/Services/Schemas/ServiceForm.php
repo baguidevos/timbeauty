@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Services\Schemas;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -12,17 +13,19 @@ class ServiceForm
 {
     public static function configure(Schema $schema): Schema
     {
-
         return $schema
             ->schema([
                 Section::make('Informations de la prestation')
+                    ->columnSpanFull()
                     ->schema([
                         TextInput::make('name')
-                            ->label('Nom')
+                            ->columnSpanFull()
+                            ->label('Nom de la prestation')
+                            ->hint('Exemple : Coupe Homme')
                             ->required()
                             ->maxLength(100),
                         Textarea::make('description')
-                            ->label('Description')
+                            ->label('Description de la prestation')
                             ->maxLength(500)
                             ->columnSpanFull(),
                         TextInput::make('price')
@@ -40,7 +43,17 @@ class ServiceForm
                             ->label('Catégorie')
                             ->relationship('category', 'name')
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->createOptionForm([
+                                TextInput::make('name')
+                                    ->label('Nom de la catégorie')
+                                    ->required()
+                                    ->maxLength(100),
+                                Textarea::make('description')
+                                    ->label('Description')
+                                    ->maxLength(500),
+                            ]),
+
                         TextInput::make('commissionRate')
                             ->label('Taux de commission (%)')
                             ->numeric()
@@ -48,15 +61,23 @@ class ServiceForm
                             ->minValue(0)
                             ->maxValue(100)
                             ->suffix('%'),
-                        Select::make('status')
+                        ToggleButtons::make('status')
                             ->label('Statut')
                             ->options([
                                 'active' => 'Actif',
                                 'inactive' => 'Inactif',
                             ])
+                            ->colors([
+                                'active' => 'success',
+                                'inactive' => 'danger',
+                            ])
+                            ->icons([
+                                'active' => 'heroicon-o-check-circle',
+                                'inactive' => 'heroicon-o-x-circle',
+                            ])
                             ->default('active')
-                            ->required()
-                            ->native(false),
+                            ->inline()
+                            ->required(),
                     ])->columns(2),
             ]);
     }

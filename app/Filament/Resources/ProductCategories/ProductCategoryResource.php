@@ -8,6 +8,7 @@ use App\Models\ProductCategory;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Override;
 
 class ProductCategoryResource extends Resource
 {
@@ -22,6 +23,12 @@ class ProductCategoryResource extends Resource
     protected static ?string $modelLabel = 'Catégorie de produit';
 
     protected static ?string $pluralModelLabel = 'Catégories de produits';
+
+    #[Override]
+    public static function canAccess(): bool
+    {
+        return false;
+    }
 
     public static function form(Schema $schema): Schema
     {
