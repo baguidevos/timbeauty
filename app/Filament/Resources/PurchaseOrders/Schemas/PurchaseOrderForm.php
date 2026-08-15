@@ -49,6 +49,7 @@ class PurchaseOrderForm
 
                 DatePicker::make('expectedDate')
                     ->label('Date de réception prévue')
+                    ->native(false)
                     ->default(fn () => now()->addDays(7))
                     ->placeholder('jj/mm/aaaa'),
 

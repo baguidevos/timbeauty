@@ -15,6 +15,7 @@ class SupplierForm
         return $schema
             ->schema([
                 Section::make('Informations du fournisseur')
+                    ->columnSpanFull()
                     ->schema([
                         TextInput::make('name')
                             ->label('Nom')
