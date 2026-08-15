@@ -14,7 +14,7 @@ use Filament\Tables\Table;
 
 class CashTransactionsRelationManager extends RelationManager
 {
-    protected static string $relationshipName = 'transactions';
+    protected static string $relationship = 'transactions';
 
     protected static ?string $title = 'Transactions';
 

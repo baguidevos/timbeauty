@@ -70,4 +70,29 @@ class Sale extends Model
     {
         return $this->hasMany(LoyaltyPointTransaction::class, 'saleId');
     }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Sale $sale): void {
+            if (! $sale->cashRegisterId) {
+                $openRegister = CashRegister::where('status', 'open')->first();
+                if ($openRegister) {
+                    $sale->cashRegisterId = $openRegister->id;
+                }
+            }
+        });
+
+        static::created(function (Sale $sale): void {
+            if ($sale->paymentMethod === 'cash' && $sale->cashRegisterId) {
+                CashTransaction::create([
+                    'cashRegisterId' => $sale->cashRegisterId,
+                    'type' => 'sale',
+                    'amount' => $sale->total,
+                    'description' => 'Encaissement Vente / Prestation #'.$sale->id,
+                    'referenceId' => (string) $sale->id,
+                    'createdBy' => $sale->createdBy ?? auth()->id(),
+                ]);
+            }
+        });
+    }
 }

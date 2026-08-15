@@ -18,6 +18,7 @@ class ExpenseForm
         return $schema
             ->schema([
                 Section::make('Informations de la dépense')
+                    ->columnSpanFull()
                     ->schema([
                         Select::make('categoryId')
                             ->label('Catégorie')
