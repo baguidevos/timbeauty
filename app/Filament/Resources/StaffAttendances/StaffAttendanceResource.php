@@ -4,7 +4,6 @@ namespace App\Filament\Resources\StaffAttendances;
 
 use App\Filament\Resources\StaffAttendances\Schemas\StaffAttendanceForm;
 use App\Filament\Resources\StaffAttendances\Tables\StaffAttendancesTable;
-use App\Filament\Resources\StaffAttendances\Widgets\StaffAttendanceWidget;
 use App\Models\StaffAttendance;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -43,9 +42,7 @@ class StaffAttendanceResource extends Resource
 
     public static function getWidgets(): array
     {
-        return [
-            StaffAttendanceWidget::class,
-        ];
+        return [];
     }
 
     public static function getPages(): array

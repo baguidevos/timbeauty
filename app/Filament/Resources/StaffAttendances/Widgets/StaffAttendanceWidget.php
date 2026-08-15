@@ -78,12 +78,6 @@ class StaffAttendanceWidget extends Widget
             $clockInStr = $att && $att->clockIn ? Carbon::parse($att->clockIn)->format('H:i') : null;
             $clockOutStr = $att && $att->clockOut ? Carbon::parse($att->clockOut)->format('H:i') : null;
 
-            // Live minutes calculation
-            $workedFormatted = '—';
-            if ($att) {
-                $workedFormatted = $att->worked_hours_formatted;
-            }
-
             $records[] = [
                 'barber_id' => $barber->id,
                 'barber_name' => "{$barber->firstName} {$barber->lastName}",
@@ -93,8 +87,10 @@ class StaffAttendanceWidget extends Widget
                 'status' => $status,
                 'clock_in' => $clockInStr,
                 'clock_out' => $clockOutStr,
-                'worked_hours' => $workedFormatted,
+                'notes' => $att?->notes ?? '',
+                'worked_hours' => $att ? $att->worked_hours_formatted : '0 min',
                 'is_clocked_in' => (bool) ($att && $att->clockIn && ! $att->clockOut),
+                'is_clocked_out' => (bool) ($att && $att->clockIn && $att->clockOut),
             ];
         }
 
@@ -112,9 +108,9 @@ class StaffAttendanceWidget extends Widget
         $barber = Barber::findOrFail($barberId);
 
         $now = now();
-        $isLate = $now->format('H:i') > '09:00'; // threshold for late arrival
+        $isLate = $now->format('H:i') > '09:00';
 
-        $attendance = StaffAttendance::updateOrCreate(
+        StaffAttendance::updateOrCreate(
             ['barberId' => $barberId, 'date' => $today],
             [
                 'clockIn' => $now,
@@ -131,16 +127,24 @@ class StaffAttendanceWidget extends Widget
         $this->loadData();
     }
 
-    public function clockOut(int $attendanceId): void
+    public function clockOut(int $barberId): void
     {
-        $attendance = StaffAttendance::with('barber')->findOrFail($attendanceId);
-        $now = now();
+        $today = Carbon::today()->toDateString();
+        $attendance = StaffAttendance::where('barberId', $barberId)
+            ->whereDate('date', $today)
+            ->first();
 
+        if (! $attendance) {
+            return;
+        }
+
+        $now = now();
         $attendance->clockOut = $now;
         $attendance->workedMinutes = $attendance->calculateWorkedMinutes();
         $attendance->save();
 
-        $barberName = $attendance->barber ? "{$attendance->barber->firstName} {$attendance->barber->lastName}" : 'L\'employé';
+        $barber = Barber::find($barberId);
+        $barberName = $barber ? "{$barber->firstName} {$barber->lastName}" : 'L\'employé';
 
         Notification::make()
             ->title("Départ pointé pour {$barberName}")
@@ -174,14 +178,37 @@ class StaffAttendanceWidget extends Widget
         $this->loadData();
     }
 
-    public function setStatus(int $attendanceId, string $status): void
+    public function setStatus(int $barberId, string $status): void
     {
-        $attendance = StaffAttendance::findOrFail($attendanceId);
-        $attendance->status = $status;
-        $attendance->save();
+        $today = Carbon::today()->toDateString();
+        $barber = Barber::findOrFail($barberId);
+
+        StaffAttendance::updateOrCreate(
+            ['barberId' => $barberId, 'date' => $today],
+            [
+                'status' => $status,
+            ]
+        );
 
         Notification::make()
-            ->title('Statut mis à jour')
+            ->title("Statut de {$barber->firstName} mis à jour")
+            ->success()
+            ->send();
+
+        $this->loadData();
+    }
+
+    public function updateNotes(int $barberId, string $notes): void
+    {
+        $today = Carbon::today()->toDateString();
+
+        StaffAttendance::updateOrCreate(
+            ['barberId' => $barberId, 'date' => $today],
+            ['notes' => $notes]
+        );
+
+        Notification::make()
+            ->title('Notes enregistrées')
             ->success()
             ->send();
 
