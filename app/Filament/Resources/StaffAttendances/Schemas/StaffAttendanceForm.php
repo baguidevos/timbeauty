@@ -20,9 +20,20 @@ class StaffAttendanceForm
                 Section::make('Informations de présence')
                     ->schema([
                         Select::make('barberId')
-                            ->label('Coiffeur')
+                            ->label('Employé')
                             ->relationship('barber', 'firstName')
-                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->firstName.' '.$record->lastName)
+                            ->getOptionLabelFromRecordUsing(function ($record) {
+                                $jobLabel = match ($record->jobTitle) {
+                                    'barber' => 'Coiffeur',
+                                    'manager' => 'Gérant',
+                                    'receptionist' => 'Réceptionniste',
+                                    'cashier' => 'Caissier',
+                                    'cleaner' => 'Entretien',
+                                    default => 'Employé',
+                                };
+
+                                return "{$record->firstName} {$record->lastName} ({$jobLabel})";
+                            })
                             ->searchable()
                             ->preload()
                             ->required(),

@@ -16,6 +16,8 @@ class Barber extends Model
         'address',
         'hireDate',
         'status',
+        'jobTitle',
+        'canPerformServices',
         'specialties',
         'photo',
         'remunerationType',
@@ -29,6 +31,7 @@ class Barber extends Model
     {
         return [
             'hireDate' => 'date',
+            'canPerformServices' => 'boolean',
             'fixedSalary' => 'decimal:0',
             'commissionRate' => 'decimal:2',
             'perServiceRate' => 'decimal:0',
@@ -93,5 +96,20 @@ class Barber extends Model
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    public function isBarber(): bool
+    {
+        return $this->jobTitle === 'barber' || $this->canPerformServices;
+    }
+
+    public function scopeCanPerformServices($query)
+    {
+        return $query->where('canPerformServices', true)->where('status', 'active');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
     }
 }

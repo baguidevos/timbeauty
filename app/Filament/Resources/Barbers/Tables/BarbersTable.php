@@ -29,6 +29,26 @@ class BarbersTable
                 TextColumn::make('phone')
                     ->label('Téléphone')
                     ->searchable(),
+                TextColumn::make('jobTitle')
+                    ->label('Poste / Fonction')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'barber' => 'primary',
+                        'manager' => 'warning',
+                        'receptionist' => 'info',
+                        'cashier' => 'success',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'barber' => 'Coiffeur / Barbier',
+                        'manager' => 'Gérant / Manager',
+                        'receptionist' => 'Réceptionniste',
+                        'cashier' => 'Caissier',
+                        'cleaner' => 'Entretien',
+                        'other' => 'Autre',
+                        default => $state ?? 'Coiffeur',
+                    })
+                    ->sortable(),
                 TextColumn::make('status')
                     ->label('Statut')
                     ->badge()
@@ -66,6 +86,16 @@ class BarbersTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('jobTitle')
+                    ->label('Poste')
+                    ->options([
+                        'barber' => 'Coiffeur / Barbier',
+                        'manager' => 'Gérant / Manager',
+                        'receptionist' => 'Réceptionniste',
+                        'cashier' => 'Caissier',
+                        'cleaner' => 'Entretien',
+                        'other' => 'Autre',
+                    ]),
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Statut')
                     ->options([

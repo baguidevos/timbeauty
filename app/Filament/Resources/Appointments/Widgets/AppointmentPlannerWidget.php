@@ -45,7 +45,7 @@ class AppointmentPlannerWidget extends Widget
 
     public function loadBarbers(): void
     {
-        $this->barbers = Barber::where('status', 'active')
+        $this->barbers = Barber::canPerformServices()
             ->select('id', 'firstName', 'lastName')
             ->get()
             ->map(fn ($b) => [

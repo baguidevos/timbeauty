@@ -27,7 +27,11 @@ class AppointmentForm
                             ->required(),
                         Select::make('barberId')
                             ->label('Coiffeur')
-                            ->relationship('barber', 'firstName')
+                            ->relationship(
+                                'barber',
+                                'firstName',
+                                fn ($query) => $query->where('canPerformServices', true)->where('status', 'active')
+                            )
                             ->getOptionLabelFromRecordUsing(fn ($record) => $record->firstName.' '.$record->lastName)
                             ->searchable()
                             ->preload()

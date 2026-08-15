@@ -19,8 +19,22 @@ class PayrollsTable
         return $table
             ->columns([
                 TextColumn::make('barber.firstName')
-                    ->label('Coiffeur')
-                    ->formatStateUsing(fn ($record) => $record->barber?->firstName.' '.$record->barber?->lastName)
+                    ->label('Employé')
+                    ->formatStateUsing(function ($record) {
+                        if (! $record->barber) {
+                            return 'N/A';
+                        }
+                        $jobLabel = match ($record->barber->jobTitle) {
+                            'barber' => 'Coiffeur',
+                            'manager' => 'Gérant',
+                            'receptionist' => 'Réceptionniste',
+                            'cashier' => 'Caissier',
+                            'cleaner' => 'Entretien',
+                            default => 'Employé',
+                        };
+
+                        return "{$record->barber->firstName} {$record->barber->lastName} ({$jobLabel})";
+                    })
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('month')
@@ -69,7 +83,7 @@ class PayrollsTable
                         'paid' => 'Payé',
                     ]),
                 Tables\Filters\SelectFilter::make('barberId')
-                    ->label('Coiffeur')
+                    ->label('Employé')
                     ->relationship('barber', 'firstName')
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->firstName.' '.$record->lastName),
             ])
