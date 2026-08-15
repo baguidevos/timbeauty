@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Barbers;
 
+use App\Filament\Resources\Barbers\RelationManagers\AbsencesRelationManager;
+use App\Filament\Resources\Barbers\RelationManagers\SchedulesRelationManager;
 use App\Filament\Resources\Barbers\Schemas\BarberForm;
 use App\Filament\Resources\Barbers\Tables\BarbersTable;
 use App\Models\Barber;
@@ -38,7 +40,10 @@ class BarberResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            SchedulesRelationManager::class,
+            AbsencesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

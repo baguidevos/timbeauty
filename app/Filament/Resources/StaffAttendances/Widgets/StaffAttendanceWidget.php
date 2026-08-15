@@ -39,7 +39,7 @@ class StaffAttendanceWidget extends Widget
     public function loadData(): void
     {
         $today = Carbon::today()->toDateString();
-        $barbers = Barber::active()->get();
+        $barbers = Barber::where('status', '!=', 'inactive')->get();
         $this->totalStaff = $barbers->count();
 
         $attendances = StaffAttendance::whereDate('date', $today)
@@ -81,6 +81,7 @@ class StaffAttendanceWidget extends Widget
             $records[] = [
                 'barber_id' => $barber->id,
                 'barber_name' => "{$barber->firstName} {$barber->lastName}",
+                'barber_status' => $barber->status,
                 'job_title' => $jobLabel,
                 'photo' => $barber->photo,
                 'attendance_id' => $att?->id,

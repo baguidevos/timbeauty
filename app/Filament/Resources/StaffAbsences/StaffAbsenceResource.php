@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\StaffAbsences;
 
+use App\Filament\Clusters\StaffPlanning;
 use App\Filament\Resources\StaffAbsences\Schemas\StaffAbsenceForm;
 use App\Filament\Resources\StaffAbsences\Tables\StaffAbsencesTable;
 use App\Models\StaffAbsence;
@@ -13,15 +14,17 @@ class StaffAbsenceResource extends Resource
 {
     protected static ?string $model = StaffAbsence::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-no-symbol';
+    protected static ?string $cluster = StaffPlanning::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-sun';
 
-    protected static ?int $navigationSort = 33;
+    protected static ?string $navigationLabel = 'Congés & Absences';
 
-    protected static ?string $modelLabel = 'Absence';
+    protected static ?int $navigationSort = 3;
 
-    protected static ?string $pluralModelLabel = 'Absences';
+    protected static ?string $modelLabel = 'Absence / Congé';
+
+    protected static ?string $pluralModelLabel = 'Congés & Absences';
 
     public static function form(Schema $schema): Schema
     {
@@ -42,8 +45,6 @@ class StaffAbsenceResource extends Resource
     {
         return [
             'index' => Pages\ListStaffAbsences::route('/'),
-            'create' => Pages\CreateStaffAbsence::route('/create'),
-            'edit' => Pages\EditStaffAbsence::route('/{record}/edit'),
         ];
     }
 }

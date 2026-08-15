@@ -17,7 +17,7 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <h3 class="text-base font-bold text-gray-950 dark:text-white">Pointage & Présence du Jour</h3>
-                            <x-filament::badge color="warning" size="xs">
+                            <x-filament::badge color="warning" size="xs" class="p-1">
                                 {{ $dateFormatted }}
                             </x-filament::badge>
                         </div>
@@ -29,19 +29,19 @@
 
                 <!-- KPI Badges -->
                 <div class="flex items-center gap-2 flex-wrap">
-                    <x-filament::badge color="{{ $attendanceRate >= 80 ? 'success' : ($attendanceRate >= 50 ? 'warning' : 'danger') }}" icon="heroicon-m-chart-bar" size="sm">
+                    <x-filament::badge class="p-1" color="{{ $attendanceRate >= 80 ? 'success' : ($attendanceRate >= 50 ? 'warning' : 'danger') }}" icon="heroicon-m-chart-bar" size="sm">
                         Taux de présence : {{ $attendanceRate }}%
                     </x-filament::badge>
-                    <x-filament::badge color="success" icon="heroicon-m-check-circle" size="sm">
+                    <x-filament::badge class="p-1" color="success" icon="heroicon-m-check-circle" size="sm">
                         Présents : {{ $presentCount }}
                     </x-filament::badge>
-                    <x-filament::badge color="warning" icon="heroicon-m-clock" size="sm">
+                    <x-filament::badge class="p-1" color="warning" icon="heroicon-m-clock" size="sm">
                         En retard : {{ $lateCount }}
                     </x-filament::badge>
-                    <x-filament::badge color="danger" icon="heroicon-m-user-minus" size="sm">
+                    <x-filament::badge class="p-1" color="danger" icon="heroicon-m-user-minus" size="sm">
                         Absents : {{ $absentCount }}
                     </x-filament::badge>
-                    <x-filament::badge color="gray" icon="heroicon-m-users" size="sm">
+                    <x-filament::badge class="p-1" color="gray" icon="heroicon-m-users" size="sm">
                         Effectif : {{ $totalStaff }}
                     </x-filament::badge>
                 </div>
@@ -141,16 +141,27 @@
                                 </div>
 
                                 <div class="min-w-0">
-                                    <h4 class="text-sm font-bold text-gray-950 dark:text-white truncate">
-                                        {{ $staff['barber_name'] }}
-                                    </h4>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <h4 class="text-sm font-bold text-gray-950 dark:text-white truncate">
+                                            {{ $staff['barber_name'] }}
+                                        </h4>
+                                        @if(($staff['barber_status'] ?? '') === 'on_leave')
+                                            <x-filament::badge class="p-1" color="warning" size="xs">
+                                                En congé
+                                            </x-filament::badge>
+                                        @elseif(($staff['barber_status'] ?? '') === 'inactive')
+                                            <x-filament::badge class="p-1" color="danger" size="xs">
+                                                Inactif
+                                            </x-filament::badge>
+                                        @endif
+                                    </div>
                                     <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">
                                         {{ $staff['job_title'] }}
                                     </p>
                                 </div>
                             </div>
 
-                            <x-filament::badge :color="$statusColor" :icon="$statusIcon" size="xs">
+                            <x-filament::badge class="p-1" :color="$statusColor" :icon="$statusIcon" size="xs">
                                 {{ $statusLabel }}
                             </x-filament::badge>
                         </div>

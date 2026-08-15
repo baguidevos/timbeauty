@@ -86,7 +86,7 @@ class ListStaffAttendances extends ListRecords
 
     public function getBarbersListProperty(): array
     {
-        return Barber::active()
+        return Barber::where('status', '!=', 'inactive')
             ->get()
             ->map(fn ($b) => [
                 'id' => (string) $b->id,
@@ -98,7 +98,7 @@ class ListStaffAttendances extends ListRecords
     public function getTodayDataProperty(): array
     {
         $today = Carbon::today()->toDateString();
-        $barbers = Barber::active()->with(['schedules'])->get();
+        $barbers = Barber::where('status', '!=', 'inactive')->with(['schedules'])->get();
         $totalStaff = $barbers->count();
 
         $attendances = StaffAttendance::whereDate('date', $today)
@@ -140,6 +140,7 @@ class ListStaffAttendances extends ListRecords
             $records[] = [
                 'barber_id' => $barber->id,
                 'barber_name' => "{$barber->firstName} {$barber->lastName}",
+                'barber_status' => $barber->status,
                 'job_title' => $jobLabel,
                 'photo' => $barber->photo,
                 'attendance_id' => $att?->id,
@@ -298,7 +299,7 @@ class ListStaffAttendances extends ListRecords
 
     public function getHistorySummariesProperty(): array
     {
-        $barbers = Barber::active()->get();
+        $barbers = Barber::where('status', '!=', 'inactive')->get();
         $attendances = StaffAttendance::whereBetween('date', [$this->historyFrom, $this->historyTo])->get();
 
         $fromDate = Carbon::parse($this->historyFrom);

@@ -1,37 +1,36 @@
 <?php
 
-namespace App\Filament\Resources\StaffAbsences\Tables;
+namespace App\Filament\Resources\Barbers\RelationManagers;
 
-use App\Models\Barber;
+use App\Filament\Resources\StaffAbsences\Schemas\StaffAbsenceForm;
 use App\Models\StaffAbsence;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Tables;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class StaffAbsencesTable
+class AbsencesRelationManager extends RelationManager
 {
-    public static function configure(Table $table): Table
+    protected static string $relationship = 'absences';
+
+    protected static ?string $title = 'Congés & Absences';
+
+    protected static string|\BackedEnum|null $icon = 'heroicon-o-sun';
+
+    public function form(Schema $schema): Schema
+    {
+        return StaffAbsenceForm::configure($schema);
+    }
+
+    public function table(Table $table): Table
     {
         return $table
+            ->recordTitleAttribute('type')
             ->columns([
-                TextColumn::make('barber.firstName')
-                    ->label('Employé')
-                    ->formatStateUsing(fn ($record) => $record->barber ? "{$record->barber->firstName} {$record->barber->lastName}" : '-')
-                    ->description(fn ($record) => $record->barber ? match ($record->barber->jobTitle) {
-                        'barber' => 'Coiffeur',
-                        'manager' => 'Gérant',
-                        'receptionist' => 'Réceptionniste',
-                        'cashier' => 'Caissier',
-                        'cleaner' => 'Entretien',
-                        default => 'Personnel',
-                    } : null)
-                    ->searchable()
-                    ->sortable(),
-
                 TextColumn::make('type')
                     ->label('Type')
                     ->badge()
@@ -48,13 +47,11 @@ class StaffAbsencesTable
                         'personal' => 'Personnel',
                         'absence' => 'Absence injustifiée',
                         default => $state,
-                    })
-                    ->sortable(),
+                    }),
 
                 TextColumn::make('startDate')
                     ->label('Période')
-                    ->formatStateUsing(fn (StaffAbsence $record) => $record->startDate->format('d/m/Y').' — '.$record->endDate->format('d/m/Y'))
-                    ->sortable(),
+                    ->formatStateUsing(fn (StaffAbsence $record) => $record->startDate->format('d/m/Y').' — '.$record->endDate->format('d/m/Y')),
 
                 TextColumn::make('days_count')
                     ->label('Durée')
@@ -84,31 +81,15 @@ class StaffAbsencesTable
 
                 TextColumn::make('reason')
                     ->label('Motif')
-                    ->limit(30)
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->limit(25),
             ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('type')
-                    ->label('Type')
-                    ->options([
-                        'vacation' => 'Congé payé',
-                        'sick' => 'Maladie',
-                        'personal' => 'Personnel',
-                        'absence' => 'Absence injustifiée',
-                    ]),
-                Tables\Filters\SelectFilter::make('barberId')
-                    ->label('Employé')
-                    ->relationship('barber', 'firstName')
-                    ->getOptionLabelFromRecordUsing(fn (Barber $record) => "{$record->firstName} {$record->lastName}"),
+            ->headerActions([
+                CreateAction::make()->slideOver(),
             ])
             ->recordActions([
                 ViewAction::make()->slideOver(),
                 EditAction::make()->slideOver(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                DeleteAction::make(),
             ])
             ->defaultSort('startDate', 'desc');
     }
