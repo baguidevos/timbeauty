@@ -59,4 +59,14 @@ class Product extends Model
     {
         return $this->stockQuantity <= $this->minStockLevel;
     }
+
+    public function scopeLowStock($query)
+    {
+        return $query->whereColumn('stockQuantity', '<=', 'minStockLevel');
+    }
+
+    public function scopeOutOfStock($query)
+    {
+        return $query->where('stockQuantity', '<=', 0);
+    }
 }

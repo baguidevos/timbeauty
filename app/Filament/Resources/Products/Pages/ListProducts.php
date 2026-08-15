@@ -3,12 +3,14 @@
 namespace App\Filament\Resources\Products\Pages;
 
 use App\Filament\Resources\Products\ProductResource;
+use App\Models\Product;
 use App\Models\ProductCategory;
 use Filament\Actions;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\HtmlString;
@@ -16,6 +18,21 @@ use Illuminate\Support\HtmlString;
 class ListProducts extends ListRecords
 {
     protected static string $resource = ProductResource::class;
+
+    public function getTabs(): array
+    {
+        $lowStockCount = Product::lowStock()->count();
+
+        return [
+            'all' => Tab::make('Tous les produits')
+                ->badge(Product::count()),
+            'low_stock' => Tab::make('Stock bas')
+                ->icon('heroicon-m-exclamation-triangle')
+                ->modifyQueryUsing(fn ($query) => $query->lowStock())
+                ->badge($lowStockCount)
+                ->badgeColor($lowStockCount > 0 ? 'danger' : 'gray'),
+        ];
+    }
 
     public function getTitle(): string|Htmlable
     {

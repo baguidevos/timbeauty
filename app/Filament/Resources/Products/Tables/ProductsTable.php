@@ -10,6 +10,7 @@ use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProductsTable
 {
@@ -65,6 +66,10 @@ class ProductsTable
                     ->sortable(),
             ])
             ->filters([
+                Tables\Filters\Filter::make('low_stock')
+                    ->label('Stock bas uniquement')
+                    ->query(fn (Builder $query): Builder => $query->lowStock())
+                    ->toggle(),
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Statut')
                     ->options([
