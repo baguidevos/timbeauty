@@ -189,6 +189,7 @@
                                 <div class="flex items-center justify-between text-xs">
                                     <span class="font-medium text-gray-500 dark:text-gray-400">Progression</span>
                                     <x-filament::badge
+                                    class="p-1"
                                         :color="$color === 'emerald' ? 'success' : ($color === 'amber' ? 'warning' : 'danger')"
                                         size="xs"
                                     >
