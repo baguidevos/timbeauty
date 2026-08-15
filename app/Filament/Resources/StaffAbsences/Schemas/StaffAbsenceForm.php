@@ -19,6 +19,7 @@ class StaffAbsenceForm
         return $schema
             ->schema([
                 Section::make('Détails de l\'absence / congé')
+                    ->columnSpanFull()
                     ->schema([
                         Select::make('barberId')
                             ->label('Employé')

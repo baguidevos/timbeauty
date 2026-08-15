@@ -215,4 +215,25 @@ class StaffAttendanceWidget extends Widget
 
         $this->loadData();
     }
+
+    public function setBarberStatus(int $barberId, string $status): void
+    {
+        $barber = Barber::findOrFail($barberId);
+        $barber->status = $status;
+        $barber->save();
+
+        $label = match ($status) {
+            'active' => 'Actif',
+            'on_leave' => 'En congé',
+            'inactive' => 'Inactif',
+            default => $status,
+        };
+
+        Notification::make()
+            ->title("Statut RH de {$barber->firstName} {$barber->lastName} : {$label}")
+            ->success()
+            ->send();
+
+        $this->loadData();
+    }
 }

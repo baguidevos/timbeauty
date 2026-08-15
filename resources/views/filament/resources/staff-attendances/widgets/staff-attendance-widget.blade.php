@@ -145,15 +145,53 @@
                                         <h4 class="text-sm font-bold text-gray-950 dark:text-white truncate">
                                             {{ $staff['barber_name'] }}
                                         </h4>
-                                        @if(($staff['barber_status'] ?? '') === 'on_leave')
-                                            <x-filament::badge class="p-1" color="warning" size="xs">
-                                                En congé
-                                            </x-filament::badge>
-                                        @elseif(($staff['barber_status'] ?? '') === 'inactive')
-                                            <x-filament::badge class="p-1" color="danger" size="xs">
-                                                Inactif
-                                            </x-filament::badge>
-                                        @endif
+
+                                        <!-- Action / Dropdown pour modifier le statut RH de l'employé -->
+                                        <x-filament::dropdown placement="bottom-start">
+                                            <x-slot name="trigger">
+                                                <button type="button" class="cursor-pointer transition-transform hover:scale-105" title="Changer le statut RH">
+                                                    @if(($staff['barber_status'] ?? '') === 'on_leave')
+                                                        <x-filament::badge class="p-1" color="warning" size="xs" icon="heroicon-m-chevron-down">
+                                                            En congé
+                                                        </x-filament::badge>
+                                                    @elseif(($staff['barber_status'] ?? '') === 'inactive')
+                                                        <x-filament::badge class="p-1" color="danger" size="xs" icon="heroicon-m-chevron-down">
+                                                            Inactif
+                                                        </x-filament::badge>
+                                                    @else
+                                                        <x-filament::badge class="p-1" color="success" size="xs" icon="heroicon-m-chevron-down">
+                                                            Actif
+                                                        </x-filament::badge>
+                                                    @endif
+                                                </button>
+                                            </x-slot>
+
+                                            <x-filament::dropdown.list>
+                                                <x-filament::dropdown.list.item
+                                                    wire:click="setBarberStatus({{ $staff['barber_id'] }}, 'active')"
+                                                    icon="heroicon-m-check-circle"
+                                                    color="success"
+                                                >
+                                                    Actif (En service)
+                                                </x-filament::dropdown.list.item>
+
+                                                <x-filament::dropdown.list.item
+                                                    wire:click="setBarberStatus({{ $staff['barber_id'] }}, 'on_leave')"
+                                                    icon="heroicon-m-clock"
+                                                    color="warning"
+                                                >
+                                                    En congé
+                                                </x-filament::dropdown.list.item>
+
+                                                <x-filament::dropdown.list.item
+                                                    wire:click="setBarberStatus({{ $staff['barber_id'] }}, 'inactive')"
+                                                    icon="heroicon-m-x-circle"
+                                                    color="danger"
+                                                >
+                                                    Inactif
+                                                </x-filament::dropdown.list.item>
+                                            </x-filament::dropdown.list>
+                                        </x-filament::dropdown>
                                     </div>
                                     <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">
                                         {{ $staff['job_title'] }}
@@ -190,62 +228,72 @@
                     </div>
 
                     <!-- Action Buttons Row 1: Pointer l'entrée / Pointer la sortie -->
-                    <div class="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <div class="space-y-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-800">
                         <div class="flex items-center gap-2">
-                            <button
-                                type="button"
+                            <x-filament::button
                                 wire:click="clockIn({{ $staff['barber_id'] }})"
-                                @disabled($staff['is_clocked_in'] || $staff['status'] === 'absent')
-                                class="flex-1 inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all shadow-2xs {{ ($staff['is_clocked_in'] || $staff['status'] === 'absent') ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white' }}"
+                                :disabled="$staff['is_clocked_in'] || $staff['status'] === 'absent'"
+                                color="success"
+                                size="xs"
+                                icon="heroicon-m-arrow-right-on-rectangle"
+                                class="flex-1 justify-center"
                             >
-                                <x-heroicon-m-arrow-right-on-rectangle class="h-3.5 w-3.5" />
                                 Pointer l'entrée
-                            </button>
+                            </x-filament::button>
 
-                            <button
-                                type="button"
+                            <x-filament::button
                                 wire:click="clockOut({{ $staff['barber_id'] }})"
-                                @disabled(!$staff['is_clocked_in'] || $staff['is_clocked_out'])
-                                class="flex-1 inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all shadow-2xs {{ (!$staff['is_clocked_in'] || $staff['is_clocked_out']) ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600 text-white' }}"
+                                :disabled="!$staff['is_clocked_in'] || $staff['is_clocked_out']"
+                                color="warning"
+                                size="xs"
+                                icon="heroicon-m-arrow-left-on-rectangle"
+                                class="flex-1 justify-center"
                             >
-                                <x-heroicon-m-arrow-left-on-rectangle class="h-3.5 w-3.5" />
                                 Pointer la sortie
-                            </button>
+                            </x-filament::button>
                         </div>
 
                         <!-- Action Buttons Row 2: Marquer absent + Statut Select shortcut -->
                         <div class="flex items-center gap-2">
-                            <button
-                                type="button"
+                            <x-filament::button
                                 wire:click="markAbsent({{ $staff['barber_id'] }})"
-                                @disabled($staff['is_clocked_in'] || $staff['status'] === 'absent')
-                                class="flex-1 inline-flex items-center justify-center gap-1.5 h-7 px-2 rounded-lg text-[11px] font-medium border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors {{ ($staff['is_clocked_in'] || $staff['status'] === 'absent') ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                :disabled="$staff['is_clocked_in'] || $staff['status'] === 'absent'"
+                                color="danger"
+                                outlined
+                                size="xs"
+                                icon="heroicon-m-user-minus"
+                                class="flex-1 justify-center"
                             >
-                                <x-heroicon-m-user-minus class="h-3 w-3" />
                                 Marquer absent
-                            </button>
+                            </x-filament::button>
 
-                            <select
-                                wire:change="setStatus({{ $staff['barber_id'] }}, $event.target.value)"
-                                class="h-7 text-[11px] font-medium rounded-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex-1 min-w-[100px] py-0 px-2"
-                            >
-                                <option value="scheduled" @selected($staff['status'] === 'scheduled')>Programmé</option>
-                                <option value="present" @selected($staff['status'] === 'present')>Présent</option>
-                                <option value="late" @selected($staff['status'] === 'late')>En retard</option>
-                                <option value="absent" @selected($staff['status'] === 'absent')>Absent</option>
-                                <option value="half_day" @selected($staff['status'] === 'half_day')>Demi-journée</option>
-                            </select>
+                            <div class="flex-1 min-w-[110px]">
+                                <x-filament::input.wrapper size="xs">
+                                    <x-filament::input.select
+                                        wire:change="setStatus({{ $staff['barber_id'] }}, $event.target.value)"
+                                        class="text-xs"
+                                    >
+                                        <option value="scheduled" @selected($staff['status'] === 'scheduled')>Programmé</option>
+                                        <option value="present" @selected($staff['status'] === 'present')>Présent</option>
+                                        <option value="late" @selected($staff['status'] === 'late')>En retard</option>
+                                        <option value="absent" @selected($staff['status'] === 'absent')>Absent</option>
+                                        <option value="half_day" @selected($staff['status'] === 'half_day')>Demi-journée</option>
+                                    </x-filament::input.select>
+                                </x-filament::input.wrapper>
+                            </div>
                         </div>
 
                         <!-- Action Row 3: Live Notes Input on blur -->
                         <div x-data="{ notes: '{{ addslashes($staff['notes']) }}' }">
-                            <input
-                                type="text"
-                                x-model="notes"
-                                @blur="$wire.updateNotes({{ $staff['barber_id'] }}, notes)"
-                                placeholder="Notes (optionnel)..."
-                                class="w-full h-7 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-[11px] text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                            />
+                            <x-filament::input.wrapper size="xs">
+                                <x-filament::input
+                                    type="text"
+                                    x-model="notes"
+                                    @blur="$wire.updateNotes({{ $staff['barber_id'] }}, notes)"
+                                    placeholder="Notes (optionnel)..."
+                                    class="text-xs"
+                                />
+                            </x-filament::input.wrapper>
                         </div>
                     </div>
                 </div>
