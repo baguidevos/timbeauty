@@ -14,7 +14,6 @@
 
     <div 
         x-data="{
-            activeTab: @entangle('activeTab'),
             mobileTab: 'catalog',
             init() {
                 window.addEventListener('keydown', (e) => {
@@ -42,64 +41,9 @@
                         }
                     }
                 });
-            },
-            printThermal(width = '58mm') {
-                const printContent = document.getElementById('thermal-receipt-content');
-                if (!printContent) return;
-
-                const printWindow = window.open('', '_blank', `width=${width === '58mm' ? 320 : 420},height=600`);
-                if (!printWindow) {
-                    alert('Veuillez autoriser les fenetres pop-up pour impression du ticket.');
-                    return;
-                }
-
-                printWindow.document.open();
-                printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <title>Ticket de Caisse</title>
-                        <style>
-                            @page { margin: 0; size: ${width} auto; }
-                            body {
-                                font-family: 'Courier New', Courier, monospace;
-                                width: ${width === '58mm' ? '54mm' : '76mm'};
-                                margin: 0 auto;
-                                padding: 8px 4px;
-                                font-size: 11px;
-                                line-height: 1.3;
-                                color: #000;
-                                background: #fff;
-                            }
-                            .text-center { text-align: center; }
-                            .text-right { text-align: right; }
-                            .text-left { text-align: left; }
-                            .font-bold { font-weight: bold; }
-                            .divider { border-top: 1px dashed #000; margin: 6px 0; }
-                            .double-divider { border-top: 2px dashed #000; margin: 6px 0; }
-                            .row { display: flex; justify-content: space-between; }
-                            .item-row { margin: 4px 0; }
-                            .total-lg { font-size: 14px; font-weight: bold; margin: 4px 0; }
-                            @media print {
-                                body { width: 100%; margin: 0; padding: 0; }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${printContent.innerHTML}
-                    </body>
-                    </html>
-                `);
-                printWindow.document.close();
-                printWindow.focus();
-                setTimeout(() => {
-                    printWindow.print();
-                    setTimeout(() => printWindow.close(), 500);
-                }, 250);
             }
         }"
-        class="space-y-6"
-    >
+        class="space-y-6">
         <!-- ─── 1. En-tête POS & Barre d'état ───────────────────────────── -->
         <x-filament::section compact>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -817,7 +761,7 @@
                 </x-filament::button>
 
                 <x-filament::button
-                    x-on:click="printThermal('58mm')"
+                    x-on:click="window.printThermal('58mm')"
                     type="button"
                     color="warning"
                     icon="heroicon-m-printer"
@@ -827,7 +771,7 @@
                 </x-filament::button>
 
                 <x-filament::button
-                    x-on:click="printThermal('80mm')"
+                    x-on:click="window.printThermal('80mm')"
                     type="button"
                     color="warning"
                     icon="heroicon-m-printer"
@@ -837,4 +781,62 @@
             </x-slot>
         </x-filament::modal>
     </div>
+
+    @script
+    <script>
+        window.printThermal = function(width = '58mm') {
+            const printContent = document.getElementById('thermal-receipt-content');
+            if (!printContent) return;
+
+            const printWindow = window.open('', '_blank', `width=${width === '58mm' ? 320 : 420},height=600`);
+            if (!printWindow) {
+                alert("Veuillez autoriser les fenêtres pop-up pour l'impression du reçu.");
+                return;
+            }
+
+            printWindow.document.open();
+            printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Ticket de Caisse</title>
+    <style>
+        @page { margin: 0; size: ${width} auto; }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            width: ${width === '58mm' ? '54mm' : '76mm'};
+            margin: 0 auto;
+            padding: 8px 4px;
+            font-size: 11px;
+            line-height: 1.3;
+            color: #000;
+            background: #fff;
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .font-bold { font-weight: bold; }
+        .divider { border-top: 1px dashed #000; margin: 6px 0; }
+        .double-divider { border-top: 2px dashed #000; margin: 6px 0; }
+        .row { display: flex; justify-content: space-between; }
+        .item-row { margin: 4px 0; }
+        .total-lg { font-size: 14px; font-weight: bold; margin: 4px 0; }
+        @media print {
+            body { width: 100%; margin: 0; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    ${printContent.innerHTML}
+</body>
+</html>`);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                setTimeout(() => printWindow.close(), 500);
+            }, 250);
+        };
+    </script>
+    @endscript
 </x-filament-panels::page>
