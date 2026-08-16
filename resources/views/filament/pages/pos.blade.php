@@ -49,10 +49,11 @@
 
                 const printWindow = window.open('', '_blank', `width=${width === '58mm' ? 320 : 420},height=600`);
                 if (!printWindow) {
-                    alert('Veuillez autoriser les fenêtres pop-up pour l\'impression du reçu.');
+                    alert('Veuillez autoriser les fenetres pop-up pour impression du ticket.');
                     return;
                 }
 
+                printWindow.document.open();
                 printWindow.document.write(`
                     <!DOCTYPE html>
                     <html>
@@ -86,16 +87,15 @@
                     </head>
                     <body>
                         ${printContent.innerHTML}
-                        <script>
-                            window.onload = function() {
-                                window.print();
-                                setTimeout(() => window.close(), 500);
-                            };
-                        <\/script>
                     </body>
                     </html>
                 `);
                 printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => {
+                    printWindow.print();
+                    setTimeout(() => printWindow.close(), 500);
+                }, 250);
             }
         }"
         class="space-y-6"
