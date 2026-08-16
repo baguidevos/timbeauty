@@ -13,7 +13,12 @@ class ListSales extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()->label('Nouvelle vente'),
+            Actions\Action::make('pos')
+                ->label('Ouvrir la Caisse (POS)')
+                ->icon('heroicon-o-shopping-cart')
+                ->color('amber')
+                ->url(fn (): string => route('filament.admin.pages.pos')),
+            Actions\CreateAction::make()->label('Nouvelle vente manuelle'),
         ];
     }
 }

@@ -1,0 +1,840 @@
+<x-filament-panels::page>
+    @php
+        $categories = $this->getCategories();
+        $products = $this->getProducts();
+        $popularServices = $this->getPopularServices();
+        $clients = $this->getClients();
+        $barbers = $this->getBarbers();
+        $subtotal = $this->getSubtotal();
+        $discountAmount = $this->getDiscountAmount();
+        $total = $this->getTotal();
+        $itemsCount = $this->getItemsCount();
+        $lastSale = $this->getLastSale();
+    @endphp
+
+    <div 
+        x-data="{
+            activeTab: @entangle('activeTab'),
+            mobileTab: 'catalog',
+            init() {
+                window.addEventListener('keydown', (e) => {
+                    // F2 -> Focus Client Search/Select
+                    if (e.key === 'F2') {
+                        e.preventDefault();
+                        const clientSelect = document.getElementById('pos-client-select');
+                        if (clientSelect) {
+                            clientSelect.focus();
+                        }
+                    }
+                    // F9 -> Process Sale
+                    if (e.key === 'F9') {
+                        e.preventDefault();
+                        if (@js(count($cart)) > 0 && !@js($processing)) {
+                            $wire.processSale();
+                        }
+                    }
+                    // Escape -> Clear Cart (when not focused on text input)
+                    if (e.key === 'Escape' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                        if (@js(count($cart)) > 0) {
+                            if (confirm('Voulez-vous vraiment vider le panier actuel ?')) {
+                                $wire.clearCart();
+                            }
+                        }
+                    }
+                });
+            },
+            printThermal(width = '58mm') {
+                const printContent = document.getElementById('thermal-receipt-content');
+                if (!printContent) return;
+
+                const printWindow = window.open('', '_blank', `width=${width === '58mm' ? 320 : 420},height=600`);
+                if (!printWindow) {
+                    alert('Veuillez autoriser les fenêtres pop-up pour l\'impression du reçu.');
+                    return;
+                }
+
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Ticket de Caisse</title>
+                        <style>
+                            @page { margin: 0; size: ${width} auto; }
+                            body {
+                                font-family: 'Courier New', Courier, monospace;
+                                width: ${width === '58mm' ? '54mm' : '76mm'};
+                                margin: 0 auto;
+                                padding: 8px 4px;
+                                font-size: 11px;
+                                line-height: 1.3;
+                                color: #000;
+                                background: #fff;
+                            }
+                            .text-center { text-align: center; }
+                            .text-right { text-align: right; }
+                            .text-left { text-align: left; }
+                            .font-bold { font-weight: bold; }
+                            .divider { border-top: 1px dashed #000; margin: 6px 0; }
+                            .double-divider { border-top: 2px dashed #000; margin: 6px 0; }
+                            .row { display: flex; justify-content: space-between; }
+                            .item-row { margin: 4px 0; }
+                            .total-lg { font-size: 14px; font-weight: bold; margin: 4px 0; }
+                            @media print {
+                                body { width: 100%; margin: 0; padding: 0; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${printContent.innerHTML}
+                        <script>
+                            window.onload = function() {
+                                window.print();
+                                setTimeout(() => window.close(), 500);
+                            };
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+        }"
+        class="space-y-6"
+    >
+        <!-- ─── 1. En-tête POS & Barre d'état ───────────────────────────── -->
+        <x-filament::section compact>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                        <x-heroicon-o-shopping-cart class="h-6 w-6" />
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl font-bold tracking-tight text-gray-950 dark:text-white">
+                                Point de Vente & Caisse
+                            </h1>
+                            <x-filament::badge color="success" icon="heroicon-m-check-circle" size="sm">
+                                Caisse Active
+                            </x-filament::badge>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Enregistrement rapide des prestations, ventes de produits et encaissements
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Raccourcis et Actions rapides -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="hidden items-center gap-1.5 md:flex">
+                        <x-filament::badge color="gray" size="sm">
+                            <kbd class="font-mono text-[10px] font-bold">F2</kbd> Client
+                        </x-filament::badge>
+                        <x-filament::badge color="gray" size="sm">
+                            <kbd class="font-mono text-[10px] font-bold">F9</kbd> Encaisser
+                        </x-filament::badge>
+                        <x-filament::badge color="gray" size="sm">
+                            <kbd class="font-mono text-[10px] font-bold">Esc</kbd> Vider
+                        </x-filament::badge>
+                    </div>
+
+                    @if(count($cart) > 0)
+                        <x-filament::button
+                            wire:click="clearCart"
+                            wire:confirm="Voulez-vous vraiment vider le panier en cours ?"
+                            color="danger"
+                            icon="heroicon-m-trash"
+                            size="sm"
+                            outlined
+                        >
+                            Vider le panier
+                        </x-filament::button>
+                    @endif
+
+                    <x-filament::button
+                        tag="a"
+                        :href="route('filament.admin.resources.sales.index')"
+                        color="gray"
+                        icon="heroicon-m-clock"
+                        size="sm"
+                    >
+                        Historique des ventes
+                    </x-filament::button>
+                </div>
+            </div>
+        </x-filament::section>
+
+        <!-- ─── 2. Onglets de bascule mobile (Catalogue / Panier) ──────── -->
+        <div class="lg:hidden">
+            <x-filament::tabs>
+                <x-filament::tabs.item
+                    :active="true"
+                    x-on:click="mobileTab = 'catalog'"
+                    icon="heroicon-m-squares-2x2"
+                >
+                    Catalogue
+                </x-filament::tabs.item>
+
+                <x-filament::tabs.item
+                    :active="false"
+                    x-on:click="mobileTab = 'cart'"
+                    icon="heroicon-m-shopping-bag"
+                    :badge="$itemsCount > 0 ? (string) $itemsCount : null"
+                    badge-color="warning"
+                >
+                    Panier
+                </x-filament::tabs.item>
+            </x-filament::tabs>
+        </div>
+
+        <!-- ─── 3. Disposition principale 2 Colonnes ──────────────────── -->
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+
+            <!-- ─── COLONNE GAUCHE: Catalogue (7 colonnes) ─────────────── -->
+            <div 
+                class="flex flex-col gap-6 lg:col-span-7"
+                :class="mobileTab !== 'catalog' ? 'hidden lg:flex' : 'flex'"
+            >
+                <!-- Barre d'onglets Catalogue & Recherche -->
+                <x-filament::section compact>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <x-filament::tabs>
+                            <x-filament::tabs.item
+                                :active="$activeTab === 'services'"
+                                wire:click="$set('activeTab', 'services')"
+                                icon="heroicon-m-scissors"
+                            >
+                                Prestations
+                            </x-filament::tabs.item>
+
+                            <x-filament::tabs.item
+                                :active="$activeTab === 'products'"
+                                wire:click="$set('activeTab', 'products')"
+                                icon="heroicon-m-cube"
+                            >
+                                Produits
+                            </x-filament::tabs.item>
+                        </x-filament::tabs>
+
+                        <!-- Barre de recherche Filament -->
+                        <div class="w-full sm:max-w-xs">
+                            <x-filament::input.wrapper prefix-icon="heroicon-m-magnifying-glass">
+                                <x-filament::input
+                                    wire:model.live.debounce.300ms="searchQuery"
+                                    type="text"
+                                    placeholder="{{ $activeTab === 'services' ? 'Rechercher une prestation...' : 'Rechercher un produit...' }}"
+                                />
+                            </x-filament::input.wrapper>
+                        </div>
+                    </div>
+                </x-filament::section>
+
+                <!-- ─── Zone de défilement Catalogue (Prestations & Produits) ─── -->
+                <div class="h-[calc(100vh-260px)] min-h-[450px] overflow-y-auto pr-2 space-y-6">
+                    <!-- ─── VUE DES PRESTATIONS ────────────────────────────── -->
+                    @if($activeTab === 'services')
+                        <div class="space-y-6">
+                            <!-- Bandeau des Prestations Populaires -->
+                            @if(!$searchQuery && $popularServices->isNotEmpty())
+                                <x-filament::section compact>
+                                    <div class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                                        <x-heroicon-m-bolt class="h-4 w-4 text-amber-500" />
+                                        Prestations Populaires & Rapides
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
+                                        @foreach($popularServices as $popular)
+                                            <button
+                                                wire:click="addToCart('service', {{ $popular->id }})"
+                                                type="button"
+                                                class="group relative flex flex-col justify-between rounded-xl border border-amber-300/60 bg-amber-50/40 p-2.5 text-left shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-amber-500 hover:bg-amber-100/60 hover:shadow-md active:translate-y-0 active:scale-98 dark:border-amber-500/30 dark:bg-amber-950/20 dark:hover:bg-amber-900/40"
+                                            >
+                                                <div class="min-w-0">
+                                                    <p class="truncate text-xs font-bold text-gray-900 transition group-hover:text-amber-600 dark:text-white">
+                                                        {{ $popular->name }}
+                                                    </p>
+                                                    <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                                                        {{ $popular->duration }} min
+                                                    </p>
+                                                </div>
+                                                <div class="mt-2 flex items-center justify-between">
+                                                    <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400">
+                                                        {{ \App\Helpers\FormatHelper::formatFCFA($popular->price) }}
+                                                    </span>
+                                                    <span class="flex h-5 w-5 items-center justify-center rounded-md bg-amber-500 text-white transition group-hover:scale-110">
+                                                        <x-heroicon-m-plus class="h-3.5 w-3.5 stroke-[2.5]" />
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </x-filament::section>
+                            @endif
+
+                            <!-- Prestations groupées par catégorie -->
+                            @forelse($categories as $category)
+                                @if($category->services->isNotEmpty())
+                                    <x-filament::section>
+                                        <x-slot name="heading">
+                                            <div class="flex items-center gap-2">
+                                                <span>{{ $category->name }}</span>
+                                                <x-filament::badge color="gray" size="xs">
+                                                    {{ $category->services->count() }}
+                                                </x-filament::badge>
+                                            </div>
+                                        </x-slot>
+
+                                        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                            @foreach($category->services as $service)
+                                                <button
+                                                    wire:click="addToCart('service', {{ $service->id }})"
+                                                    type="button"
+                                                    class="group relative flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-3 text-left shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md active:translate-y-0 active:scale-98 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-amber-500"
+                                                >
+                                                    <div>
+                                                        <h4 class="text-xs font-bold leading-tight text-gray-900 group-hover:text-amber-600 dark:text-white transition">
+                                                            {{ $service->name }}
+                                                        </h4>
+                                                        @if($service->description)
+                                                            <p class="mt-1 line-clamp-1 text-[11px] text-gray-400">
+                                                                {{ $service->description }}
+                                                            </p>
+                                                        @endif
+                                                    </div>
+
+                                                    <div class="mt-3 flex items-center justify-between border-t border-gray-100 pt-2 dark:border-gray-800">
+                                                        <div class="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                                            <x-heroicon-m-clock class="h-3 w-3 text-gray-400" />
+                                                            {{ $service->duration }} min
+                                                        </div>
+                                                        <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400">
+                                                            {{ \App\Helpers\FormatHelper::formatFCFA($service->price) }}
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </x-filament::section>
+                                @endif
+                            @empty
+                                <x-filament::empty-state
+                                    icon="heroicon-o-scissors"
+                                    heading="Aucune prestation trouvée"
+                                    description="Modifiez vos critères de recherche pour afficher les prestations."
+                                />
+                            @endforelse
+                        </div>
+                    @endif
+
+                    <!-- ─── VUE DES PRODUITS ───────────────────────────────── -->
+                    @if($activeTab === 'products')
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                @forelse($products as $product)
+                                    @php
+                                        $isOutOfStock = $product->stockQuantity <= 0;
+                                        $isLowStock = $product->stockQuantity <= $product->minStockLevel;
+                                    @endphp
+                                    <button
+                                        wire:click="addToCart('product', {{ $product->id }})"
+                                        @disabled($isOutOfStock)
+                                        type="button"
+                                        class="group relative flex flex-col justify-between rounded-xl border {{ $isOutOfStock ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/40' : 'border-gray-200 bg-white hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-amber-500' }} p-3 text-left shadow-xs transition-all duration-150 active:scale-98"
+                                    >
+                                        <div>
+                                            <h4 class="text-xs font-bold leading-tight text-gray-900 group-hover:text-amber-600 dark:text-white transition">
+                                                {{ $product->name }}
+                                            </h4>
+                                            @if($product->reference)
+                                                <p class="mt-0.5 font-mono text-[10px] text-gray-400">
+                                                    {{ $product->reference }}
+                                                </p>
+                                            @endif
+                                        </div>
+
+                                        <div class="mt-3 flex items-center justify-between border-t border-gray-100 pt-2 dark:border-gray-800">
+                                            <!-- Badge de Stock Filament -->
+                                            @if($isOutOfStock)
+                                                <x-filament::badge color="danger" size="xs">
+                                                    Rupture (0)
+                                                </x-filament::badge>
+                                            @elseif($isLowStock)
+                                                <x-filament::badge color="warning" size="xs" class="animate-pulse">
+                                                    Stock: {{ $product->stockQuantity }}
+                                                </x-filament::badge>
+                                            @else
+                                                <x-filament::badge color="success" size="xs">
+                                                    Stock: {{ $product->stockQuantity }}
+                                                </x-filament::badge>
+                                            @endif
+
+                                            <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400">
+                                                {{ \App\Helpers\FormatHelper::formatFCFA($product->sellingPrice) }}
+                                            </span>
+                                        </div>
+                                    </button>
+                                @empty
+                                    <div class="col-span-full">
+                                        <x-filament::empty-state
+                                            icon="heroicon-o-cube"
+                                            heading="Aucun produit disponible"
+                                            description="Vérifiez les filtres de stock ou modifiez votre recherche."
+                                        />
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- ─── COLONNE DROITE: Caisse & Panier en cours (5 colonnes) ─ -->
+            <div 
+                class="flex flex-col gap-4 lg:col-span-5"
+                :class="mobileTab !== 'cart' ? 'hidden lg:flex' : 'flex'"
+            >
+                <x-filament::section>
+                    <x-slot name="heading">
+                        <div class="flex items-center gap-2">
+                            <x-heroicon-m-shopping-bag class="h-5 w-5 text-amber-500" />
+                            <span>Vente en cours</span>
+                        </div>
+                    </x-slot>
+
+                    <x-slot name="headerEnd">
+                        @if($itemsCount > 0)
+                            <x-filament::badge color="warning" size="sm">
+                                {{ $itemsCount }} article(s)
+                            </x-filament::badge>
+                        @endif
+                    </x-slot>
+
+                    <div class="space-y-4">
+                        <!-- ─── Sélection Client ────────────────────────── -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                    <x-heroicon-m-user class="h-3.5 w-3.5 text-amber-500" /> Client
+                                </label>
+                                <x-filament::button
+                                    x-on:click="$dispatch('open-modal', { id: 'quick-client-modal' })"
+                                    type="button"
+                                    color="warning"
+                                    icon="heroicon-m-user-plus"
+                                    size="xs"
+                                    outlined
+                                >
+                                    Nouveau client
+                                </x-filament::button>
+                            </div>
+
+                            <x-filament::input.wrapper>
+                                <x-filament::input.select
+                                    id="pos-client-select"
+                                    wire:model.live="clientId"
+                                >
+                                    <option value="">👤 Client sans rendez-vous (Walk-in)</option>
+                                    @foreach($clients as $c)
+                                        <option value="{{ $c->id }}">
+                                            {{ $c->getFullName() }} ({{ $c->phone }})
+                                        </option>
+                                    @endforeach
+                                </x-filament::input.select>
+                            </x-filament::input.wrapper>
+                        </div>
+
+                        <!-- ─── Sélection Coiffeur ─────────────────────── -->
+                        <div class="space-y-1.5">
+                            <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                <x-heroicon-m-scissors class="h-3.5 w-3.5 text-amber-500" /> Coiffeur / Barbier assigné
+                            </label>
+                            
+                            <x-filament::input.wrapper>
+                                <x-filament::input.select wire:model.live="barberId">
+                                    <option value="">✂️ Aucun coiffeur assigné</option>
+                                    @foreach($barbers as $barber)
+                                        @php
+                                            $avail = $this->getBarberAvailability($barber->id);
+                                        @endphp
+                                        <option value="{{ $barber->id }}">
+                                            {{ $barber->getFullName() }} — [{{ $avail['label'] }}]
+                                        </option>
+                                    @endforeach
+                                </x-filament::input.select>
+                            </x-filament::input.wrapper>
+
+                            @if($barberId)
+                                @php
+                                    $activeBarberAvail = $this->getBarberAvailability($barberId);
+                                    $badgeColor = match($activeBarberAvail['status']) {
+                                        'available' => 'success',
+                                        'available_soon' => 'warning',
+                                        'busy' => 'danger',
+                                        default => 'gray',
+                                    };
+                                @endphp
+                                <div class="mt-1 flex items-center justify-between">
+                                    <x-filament::badge :color="$badgeColor" size="sm">
+                                        {{ $activeBarberAvail['label'] }} : {{ $activeBarberAvail['details'] }}
+                                    </x-filament::badge>
+                                    @if($activeBarberAvail['service'])
+                                        <span class="text-[11px] text-gray-500 dark:text-gray-400">({{ $activeBarberAvail['service'] }})</span>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- ─── Liste des Articles du Panier ───────────── -->
+                        <div class="border-t border-gray-100 pt-3 dark:border-gray-800">
+                            <label class="text-xs font-bold uppercase tracking-wider text-gray-400">
+                                Articles du panier
+                            </label>
+
+                            <div class="mt-2 max-h-[260px] space-y-2 overflow-y-auto pr-1">
+                                @forelse($cart as $key => $item)
+                                    <div class="flex items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 transition hover:border-amber-300 dark:border-gray-800/80 dark:bg-gray-800/40 dark:hover:border-amber-500/50">
+                                        <div class="flex min-w-0 flex-1 items-center gap-2.5">
+                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ $item['type'] === 'service' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' }}">
+                                                @if($item['type'] === 'service')
+                                                    <x-heroicon-m-scissors class="h-4 w-4" />
+                                                @else
+                                                    <x-heroicon-m-cube class="h-4 w-4" />
+                                                @endif
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="truncate text-xs font-bold text-gray-900 dark:text-white">
+                                                    {{ $item['name'] }}
+                                                </p>
+                                                <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                                    {{ \App\Helpers\FormatHelper::formatFCFA($item['unitPrice']) }}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Boutons de Quantité Filament -->
+                                        <div class="flex items-center gap-1">
+                                            <x-filament::icon-button
+                                                wire:click="updateQuantity('{{ $key }}', -1)"
+                                                icon="heroicon-m-minus"
+                                                size="xs"
+                                                color="gray"
+                                                label="Diminuer"
+                                            />
+                                            <span class="w-6 text-center text-xs font-bold tabular-nums text-gray-900 dark:text-white">
+                                                {{ $item['quantity'] }}
+                                            </span>
+                                            <x-filament::icon-button
+                                                wire:click="updateQuantity('{{ $key }}', 1)"
+                                                icon="heroicon-m-plus"
+                                                size="xs"
+                                                color="gray"
+                                                label="Augmenter"
+                                            />
+                                        </div>
+
+                                        <!-- Total Ligne -->
+                                        <span class="min-w-[70px] text-right text-xs font-bold tabular-nums text-gray-900 dark:text-white">
+                                            {{ \App\Helpers\FormatHelper::formatFCFA($item['unitPrice'] * $item['quantity']) }}
+                                        </span>
+
+                                        <!-- Supprimer -->
+                                        <x-filament::icon-button
+                                            wire:click="removeFromCart('{{ $key }}')"
+                                            icon="heroicon-m-trash"
+                                            size="xs"
+                                            color="danger"
+                                            label="Supprimer"
+                                        />
+                                    </div>
+                                @empty
+                                    <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 py-8 text-center dark:border-gray-800">
+                                        <x-heroicon-o-shopping-bag class="h-8 w-8 text-gray-400" />
+                                        <p class="mt-2 text-xs font-bold text-gray-700 dark:text-gray-300">Votre panier est vide</p>
+                                        <p class="text-[11px] text-gray-400">Cliquez sur une prestation ou un produit pour l'ajouter.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        <!-- ─── Bloc des Totaux & Remises ────────────────── -->
+                        <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3.5 dark:bg-amber-500/10 space-y-3">
+                            <div class="flex items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-300">
+                                <span>Sous-total</span>
+                                <span class="font-bold tabular-nums text-gray-900 dark:text-white">
+                                    {{ \App\Helpers\FormatHelper::formatFCFA($subtotal) }}
+                                </span>
+                            </div>
+
+                            <!-- Remise -->
+                            <div class="flex items-center justify-between gap-2 text-xs">
+                                <div class="flex items-center gap-1.5">
+                                    <x-heroicon-m-tag class="h-3.5 w-3.5 text-amber-600" />
+                                    <span class="font-medium text-gray-600 dark:text-gray-300">Remise</span>
+                                    <x-filament::input.wrapper size="sm" class="w-32">
+                                        <x-filament::input.select
+                                            wire:model.live="discountType"
+                                        >
+                                            <option value="percentage">% Pourcentage</option>
+                                            <option value="fixed">Montant Fixe</option>
+                                        </x-filament::input.select>
+                                    </x-filament::input.wrapper>
+                                </div>
+                                <div class="w-24">
+                                    <x-filament::input.wrapper size="sm">
+                                        <x-filament::input
+                                            wire:model.live.debounce.300ms="discountValue"
+                                            type="number"
+                                            min="0"
+                                            max="{{ $discountType === 'percentage' ? 100 : 9999999 }}"
+                                            placeholder="0"
+                                            class="text-right font-bold"
+                                        />
+                                    </x-filament::input.wrapper>
+                                </div>
+                            </div>
+
+                            @if($discountAmount > 0)
+                                <div class="flex items-center justify-between text-xs font-semibold text-rose-600 dark:text-rose-400">
+                                    <span>Déduction remise</span>
+                                    <span>- {{ \App\Helpers\FormatHelper::formatFCFA($discountAmount) }}</span>
+                                </div>
+                            @endif
+
+                            <div class="border-t border-amber-500/20 pt-2 flex items-center justify-between">
+                                <span class="text-sm font-extrabold text-gray-950 dark:text-white">TOTAL À PAYER</span>
+                                <span class="text-xl font-black text-amber-600 dark:text-amber-400 tabular-nums">
+                                    {{ \App\Helpers\FormatHelper::formatFCFA($total) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- ─── Modes de Règlement ──────────────────────── -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                Mode de règlement
+                            </label>
+                            <div class="grid grid-cols-5 gap-1.5">
+                                @php
+                                    $methods = [
+                                        ['id' => 'cash', 'label' => 'Espèces'],
+                                        ['id' => 'tmoney', 'label' => 'TMoney'],
+                                        ['id' => 'flooz', 'label' => 'Flooz'],
+                                        ['id' => 'card', 'label' => 'Carte'],
+                                        ['id' => 'transfer', 'label' => 'Virement'],
+                                    ];
+                                @endphp
+                                @foreach($methods as $method)
+                                    <button
+                                        wire:click="$set('paymentMethod', '{{ $method['id'] }}')"
+                                        type="button"
+                                        class="flex flex-col items-center justify-center rounded-xl border p-2 text-center transition {{ $paymentMethod === $method['id'] ? 'border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold shadow-xs' : 'border-gray-200 bg-white text-gray-600 hover:border-amber-300 dark:border-gray-800 dark:bg-gray-800/60 dark:text-gray-400 font-medium' }}"
+                                    >
+                                        <span class="text-[11px] leading-tight">{{ $method['label'] }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- ─── Bouton d'Encaissement Filament ──────────── -->
+                        <x-filament::button
+                            wire:click="processSale"
+                            wire:loading.attr="disabled"
+                            :disabled="empty($cart) || $processing"
+                            color="warning"
+                            size="xl"
+                            icon="heroicon-m-check-circle"
+                            class="w-full shadow-lg shadow-amber-500/25"
+                        >
+                            ENCAISSER {{ $total > 0 ? \App\Helpers\FormatHelper::formatFCFA($total) : '' }}
+                        </x-filament::button>
+                    </div>
+                </x-filament::section>
+            </div>
+        </div>
+
+        <!-- ─── 4. Modal Création Rapide de Client Filament ────────────── -->
+        <x-filament::modal
+            id="quick-client-modal"
+            width="md"
+            icon="heroicon-o-user-plus"
+            icon-color="warning"
+        >
+            <x-slot name="heading">
+                Nouveau client sans rendez-vous
+            </x-slot>
+
+            <x-slot name="description">
+                Enregistrez rapidement les coordonnées du client walk-in.
+            </x-slot>
+
+            <form wire:submit.prevent="createQuickClient" id="quickClientForm" class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">Prénom *</label>
+                        <x-filament::input.wrapper>
+                            <x-filament::input
+                                wire:model="quickClientFirstName"
+                                type="text"
+                                required
+                                placeholder="ex: Yao"
+                            />
+                        </x-filament::input.wrapper>
+                        @error('quickClientFirstName') <span class="text-[10px] text-rose-500">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">Nom *</label>
+                        <x-filament::input.wrapper>
+                            <x-filament::input
+                                wire:model="quickClientLastName"
+                                type="text"
+                                required
+                                placeholder="ex: Mensah"
+                            />
+                        </x-filament::input.wrapper>
+                        @error('quickClientLastName') <span class="text-[10px] text-rose-500">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">Numéro de téléphone *</label>
+                    <x-filament::input.wrapper prefix-icon="heroicon-m-phone">
+                        <x-filament::input
+                            wire:model="quickClientPhone"
+                            type="text"
+                            required
+                            placeholder="ex: +228 90 12 34 56"
+                        />
+                    </x-filament::input.wrapper>
+                    @error('quickClientPhone') <span class="text-[10px] text-rose-500">{{ $message }}</span> @enderror
+                </div>
+            </form>
+
+            <x-slot name="footerActions">
+                <x-filament::button
+                    x-on:click="$dispatch('close-modal', { id: 'quick-client-modal' })"
+                    type="button"
+                    color="gray"
+                >
+                    Annuler
+                </x-filament::button>
+
+                <x-filament::button
+                    type="submit"
+                    form="quickClientForm"
+                    color="warning"
+                >
+                    Enregistrer et sélectionner
+                </x-filament::button>
+            </x-slot>
+        </x-filament::modal>
+
+        <!-- ─── 5. Modal Ticket de Caisse & Impression Thermique ────────── -->
+        <x-filament::modal
+            id="receipt-modal"
+            width="lg"
+            icon="heroicon-o-check-circle"
+            icon-color="success"
+        >
+            <x-slot name="heading">
+                Vente {{ $lastSale ? '#'.$lastSale->id : '' }} enregistrée !
+            </x-slot>
+
+            <x-slot name="description">
+                Ticket de caisse prêt pour remise au client ou impression thermique.
+            </x-slot>
+
+            @if($lastSale)
+                <!-- Prévisualisation du Ticket Thermique -->
+                <div class="max-h-[380px] overflow-y-auto rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4 font-mono text-xs text-gray-900 shadow-inner dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100">
+                    <div id="thermal-receipt-content" class="space-y-2">
+                        <div class="text-center">
+                            <p class="font-bold text-sm">{{ \App\Models\Setting::get('shop_name', 'BarberShop Pro') }}</p>
+                            <p class="text-[10px] text-gray-500">{{ \App\Models\Setting::get('shop_address', 'Lomé, Togo') }}</p>
+                            <p class="text-[10px] text-gray-500">Tél: {{ \App\Models\Setting::get('shop_phone', '+228 90 00 00 00') }}</p>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <div class="flex justify-between text-[11px]">
+                            <span>Ticket N°: #{{ $lastSale->id }}</span>
+                            <span>{{ $lastSale->created_at->format('d/m/Y H:i') }}</span>
+                        </div>
+                        <div class="text-[11px]">
+                            <span>Client: {{ $lastSale->client ? $lastSale->client->getFullName() : 'Client sans RDV' }}</span>
+                        </div>
+                        @if($lastSale->barber)
+                            <div class="text-[11px]">
+                                <span>Coiffeur: {{ $lastSale->barber->getFullName() }}</span>
+                            </div>
+                        @endif
+
+                        <div class="divider"></div>
+
+                        <!-- Articles -->
+                        <div class="space-y-1">
+                            @foreach($lastSale->items as $item)
+                                <div class="flex justify-between text-[11px]">
+                                    <span>{{ $item->name }} x{{ $item->quantity }}</span>
+                                    <span>{{ \App\Helpers\FormatHelper::formatFCFA($item->total) }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <div class="space-y-0.5 text-[11px]">
+                            <div class="flex justify-between">
+                                <span>Sous-total</span>
+                                <span>{{ \App\Helpers\FormatHelper::formatFCFA($lastSale->subtotal) }}</span>
+                            </div>
+                            @if($lastSale->discountAmount > 0)
+                                <div class="flex justify-between text-rose-600 font-bold">
+                                    <span>Remise</span>
+                                    <span>- {{ \App\Helpers\FormatHelper::formatFCFA($lastSale->discountAmount) }}</span>
+                                </div>
+                            @endif
+                            <div class="flex justify-between font-bold text-sm pt-1">
+                                <span>TOTAL</span>
+                                <span>{{ \App\Helpers\FormatHelper::formatFCFA($lastSale->total) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <div class="text-center text-[10px] text-gray-500 space-y-1">
+                            <p>Règlement : {{ strtoupper($lastSale->paymentMethod) }}</p>
+                            <p class="font-bold">{{ \App\Models\Setting::get('receipt_footer', 'Merci de votre visite et à très bientôt !') }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <x-slot name="footerActions">
+                <x-filament::button
+                    x-on:click="$dispatch('close-modal', { id: 'receipt-modal' })"
+                    type="button"
+                    color="gray"
+                >
+                    Fermer
+                </x-filament::button>
+
+                <x-filament::button
+                    x-on:click="printThermal('58mm')"
+                    type="button"
+                    color="warning"
+                    icon="heroicon-m-printer"
+                    outlined
+                >
+                    Ticket 58mm
+                </x-filament::button>
+
+                <x-filament::button
+                    x-on:click="printThermal('80mm')"
+                    type="button"
+                    color="warning"
+                    icon="heroicon-m-printer"
+                >
+                    Ticket 80mm
+                </x-filament::button>
+            </x-slot>
+        </x-filament::modal>
+    </div>
+</x-filament-panels::page>

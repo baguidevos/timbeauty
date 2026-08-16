@@ -1,0 +1,184 @@
+<?php
+
+use App\Filament\Pages\Pos;
+use App\Models\Barber;
+use App\Models\Client;
+use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\Sale;
+use App\Models\Service;
+use App\Models\ServiceCategory;
+use App\Models\User;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->admin = User::factory()->create([
+        'name' => 'Admin POS',
+        'email' => 'admin-pos@test.com',
+        'active' => true,
+    ]);
+
+    $this->category = ServiceCategory::create([
+        'name' => 'Coupe Test',
+        'order' => 1,
+    ]);
+
+    $this->service = Service::create([
+        'name' => 'Coupe Homme Test',
+        'price' => 3500,
+        'duration' => 30,
+        'categoryId' => $this->category->id,
+        'status' => 'active',
+    ]);
+
+    $this->productCategory = ProductCategory::create([
+        'name' => 'Produits Capillaires',
+    ]);
+
+    $this->product = Product::create([
+        'name' => 'Gel Test',
+        'sellingPrice' => 2000,
+        'stockQuantity' => 15,
+        'minStockLevel' => 3,
+        'categoryId' => $this->productCategory->id,
+        'status' => 'active',
+    ]);
+
+    $this->barber = Barber::create([
+        'firstName' => 'Barber',
+        'lastName' => 'Test',
+        'phone' => '+228 90 00 00 01',
+        'status' => 'active',
+        'canPerformServices' => true,
+    ]);
+
+    $this->client = Client::create([
+        'firstName' => 'Client',
+        'lastName' => 'Test',
+        'phone' => '+228 90 00 00 02',
+        'firstVisitDate' => now()->toDateString(),
+    ]);
+});
+
+it('can render POS page for authenticated user', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(Pos::class)
+        ->assertSuccessful()
+        ->assertSee('Point de Vente')
+        ->assertSee('Prestations')
+        ->assertSee('Produits')
+        ->assertSee($this->service->name);
+});
+
+it('can add service and product to cart and persist in session', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->call('addToCart', 'product', $this->product->id)
+        ->assertSet('cart.service_'.$this->service->id.'.quantity', 1)
+        ->assertSet('cart.product_'.$this->product->id.'.quantity', 1);
+
+    expect(session('pos_cart.cart'))->toHaveKey('service_'.$this->service->id)
+        ->and(session('pos_cart.cart'))->toHaveKey('product_'.$this->product->id);
+});
+
+it('can restore cart from session on mount', function () {
+    session(['pos_cart' => [
+        'cart' => [
+            'service_'.$this->service->id => [
+                'type' => 'service',
+                'itemId' => $this->service->id,
+                'name' => $this->service->name,
+                'unitPrice' => 3500,
+                'quantity' => 2,
+            ],
+        ],
+        'clientId' => $this->client->id,
+        'barberId' => $this->barber->id,
+        'discountType' => 'percentage',
+        'discountValue' => 10,
+        'paymentMethod' => 'tmoney',
+        'notes' => 'Test note',
+    ]]);
+
+    $this->actingAs($this->admin);
+
+    Livewire::test(Pos::class)
+        ->assertSet('clientId', $this->client->id)
+        ->assertSet('barberId', $this->barber->id)
+        ->assertSet('paymentMethod', 'tmoney')
+        ->assertSet('discountValue', 10)
+        ->assertSet('cart.service_'.$this->service->id.'.quantity', 2);
+});
+
+it('can update quantity and remove item from cart', function () {
+    $this->actingAs($this->admin);
+
+    $test = Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->call('updateQuantity', 'service_'.$this->service->id, 1)
+        ->assertSet('cart.service_'.$this->service->id.'.quantity', 2);
+
+    expect(session('pos_cart.cart.service_'.$this->service->id.'.quantity'))->toBe(2);
+
+    $test->call('removeFromCart', 'service_'.$this->service->id)
+        ->assertSet('cart', []);
+
+    expect(session('pos_cart.cart'))->toBeEmpty();
+});
+
+it('can clear cart and forget session', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->call('clearCart')
+        ->assertSet('cart', []);
+
+    expect(session()->has('pos_cart'))->toBeFalse();
+});
+
+it('can create quick client directly in POS', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(Pos::class)
+        ->set('quickClientFirstName', 'Koffi')
+        ->set('quickClientLastName', 'Agbeko')
+        ->set('quickClientPhone', '+228 99 88 77 66')
+        ->call('createQuickClient')
+        ->assertHasNoErrors()
+        ->assertSet('showQuickClientModal', false);
+
+    $newClient = Client::where('phone', '+228 99 88 77 66')->first();
+    expect($newClient)->not->toBeNull()
+        ->and($newClient->firstName)->toBe('Koffi');
+});
+
+it('can process sale, decrement product stock and clear session cart', function () {
+    $initialStock = $this->product->stockQuantity;
+
+    $this->actingAs($this->admin);
+
+    Livewire::test(Pos::class)
+        ->set('clientId', $this->client->id)
+        ->set('barberId', $this->barber->id)
+        ->call('addToCart', 'service', $this->service->id)
+        ->call('addToCart', 'product', $this->product->id)
+        ->set('paymentMethod', 'cash')
+        ->call('processSale')
+        ->assertHasNoErrors()
+        ->assertSet('cart', [])
+        ->assertSet('showReceiptModal', true);
+
+    expect(session()->has('pos_cart'))->toBeFalse();
+
+    $this->product->refresh();
+    expect($this->product->stockQuantity)->toBe($initialStock - 1);
+
+    $sale = Sale::latest()->first();
+    expect($sale)->not->toBeNull()
+        ->and($sale->total)->toEqual(5500)
+        ->and($sale->items()->count())->toBe(2);
+});

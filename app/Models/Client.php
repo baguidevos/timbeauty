@@ -85,4 +85,13 @@ class Client extends Model
     {
         return $this->firstName.' '.$this->lastName;
     }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Client $client): void {
+            if (! $client->firstVisitDate) {
+                $client->firstVisitDate = now()->toDateString();
+            }
+        });
+    }
 }
