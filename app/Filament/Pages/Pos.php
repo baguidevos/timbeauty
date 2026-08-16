@@ -36,13 +36,13 @@ class Pos extends Page
     // Cart state
     public array $cart = [];
 
-    public ?int $clientId = null;
+    public $clientId = null;
 
-    public ?int $barberId = null;
+    public $barberId = null;
 
     public string $discountType = 'percentage'; // 'percentage' | 'fixed'
 
-    public float $discountValue = 0;
+    public $discountValue = 0;
 
     public string $paymentMethod = 'cash';
 
@@ -55,7 +55,7 @@ class Pos extends Page
 
     public string $clientSearch = '';
 
-    public ?int $selectedCategoryId = null;
+    public $selectedCategoryId = null;
 
     // Modals
     public bool $showQuickClientModal = false;
@@ -85,7 +85,7 @@ class Pos extends Page
             $this->clientId = $saved['clientId'] ?? null;
             $this->barberId = $saved['barberId'] ?? null;
             $this->discountType = $saved['discountType'] ?? 'percentage';
-            $this->discountValue = (float) ($saved['discountValue'] ?? 0);
+            $this->discountValue = $saved['discountValue'] ?? 0;
             $this->paymentMethod = $saved['paymentMethod'] ?? 'cash';
             $this->notes = $saved['notes'] ?? '';
         }
@@ -98,10 +98,10 @@ class Pos extends Page
     {
         session(['pos_cart' => [
             'cart' => $this->cart,
-            'clientId' => $this->clientId,
-            'barberId' => $this->barberId,
+            'clientId' => $this->clientId ? (int) $this->clientId : null,
+            'barberId' => $this->barberId ? (int) $this->barberId : null,
             'discountType' => $this->discountType,
-            'discountValue' => $this->discountValue,
+            'discountValue' => is_numeric($this->discountValue) ? (float) $this->discountValue : 0,
             'paymentMethod' => $this->paymentMethod,
             'notes' => $this->notes,
         ]]);
@@ -456,11 +456,12 @@ class Pos extends Page
     public function getDiscountAmount(): float
     {
         $subtotal = $this->getSubtotal();
+        $discountVal = is_numeric($this->discountValue) ? (float) $this->discountValue : 0;
         if ($this->discountType === 'percentage') {
-            return round(($subtotal * min(100, max(0, $this->discountValue))) / 100);
+            return round(($subtotal * min(100, max(0, $discountVal))) / 100);
         }
 
-        return min($subtotal, max(0, round($this->discountValue)));
+        return min($subtotal, max(0, round($discountVal)));
     }
 
     public function getTotal(): float

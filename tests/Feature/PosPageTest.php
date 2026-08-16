@@ -140,6 +140,21 @@ it('can clear cart and forget session', function () {
     expect(session()->has('pos_cart'))->toBeFalse();
 });
 
+it('can update discount values without errors', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->set('discountType', 'percentage')
+        ->set('discountValue', '15')
+        ->assertSet('discountValue', '15')
+        ->set('discountValue', '')
+        ->set('discountValue', 20)
+        ->assertSet('discountValue', 20);
+
+    expect(session('pos_cart.discountValue'))->toBe(20.0);
+});
+
 it('can create quick client directly in POS', function () {
     $this->actingAs($this->admin);
 
