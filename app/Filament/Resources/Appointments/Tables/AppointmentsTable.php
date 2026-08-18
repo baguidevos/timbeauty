@@ -107,9 +107,10 @@ class AppointmentsTable
                     ->icon('heroicon-o-check-circle')
                     ->color('info')
                     ->visible(fn ($record) => $record->status === 'pending')
-                    ->action(function ($record): void {
+                    ->action(function ($record, $livewire): void {
                         $record->update(['status' => 'confirmed']);
                         Notification::make()->title('Rendez-vous confirmé')->success()->send();
+                        $livewire->dispatch('refreshAppointmentPlanner');
                     }),
 
                 Action::make('start')
@@ -117,9 +118,10 @@ class AppointmentsTable
                     ->icon('heroicon-o-play')
                     ->color('primary')
                     ->visible(fn ($record) => $record->status === 'confirmed')
-                    ->action(function ($record): void {
+                    ->action(function ($record, $livewire): void {
                         $record->update(['status' => 'in_progress']);
                         Notification::make()->title('Prestation en cours')->success()->send();
+                        $livewire->dispatch('refreshAppointmentPlanner');
                     }),
 
                 Action::make('complete')
@@ -127,9 +129,10 @@ class AppointmentsTable
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->visible(fn ($record) => $record->status === 'in_progress')
-                    ->action(function ($record): void {
+                    ->action(function ($record, $livewire): void {
                         $record->update(['status' => 'completed']);
                         Notification::make()->title('Rendez-vous terminé')->success()->send();
+                        $livewire->dispatch('refreshAppointmentPlanner');
                     }),
 
                 Action::make('no_show')
@@ -139,9 +142,10 @@ class AppointmentsTable
                     ->visible(fn ($record) => in_array($record->status, ['pending', 'confirmed']))
                     ->requiresConfirmation()
                     ->modalHeading('Marquer le client comme non présenté ?')
-                    ->action(function ($record): void {
+                    ->action(function ($record, $livewire): void {
                         $record->update(['status' => 'no_show']);
                         Notification::make()->title('Statut mis à jour : Absent')->warning()->send();
+                        $livewire->dispatch('refreshAppointmentPlanner');
                     }),
 
                 Action::make('cancel')
@@ -151,19 +155,26 @@ class AppointmentsTable
                     ->visible(fn ($record) => ! in_array($record->status, ['completed', 'cancelled', 'no_show']))
                     ->requiresConfirmation()
                     ->modalHeading('Annuler ce rendez-vous ?')
-                    ->action(function ($record): void {
+                    ->action(function ($record, $livewire): void {
                         $record->update(['status' => 'cancelled']);
                         Notification::make()->title('Rendez-vous annulé')->warning()->send();
+                        $livewire->dispatch('refreshAppointmentPlanner');
                     }),
 
                 ViewAction::make()
                     ->slideOver(),
                 EditAction::make()
-                    ->slideOver(),
+                    ->slideOver()
+                    ->after(function ($livewire): void {
+                        $livewire->dispatch('refreshAppointmentPlanner');
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->after(function ($livewire): void {
+                            $livewire->dispatch('refreshAppointmentPlanner');
+                        }),
                 ]),
             ])
             ->defaultSort('date', 'desc');

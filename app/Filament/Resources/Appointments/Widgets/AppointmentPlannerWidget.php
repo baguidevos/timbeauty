@@ -7,6 +7,7 @@ use App\Models\Barber;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
+use Livewire\Attributes\On;
 
 class AppointmentPlannerWidget extends Widget
 {
@@ -14,9 +15,11 @@ class AppointmentPlannerWidget extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected static ?string $pollingInterval = '5s';
+
     public string $viewMode = 'day';
 
-    public string $currentDate;
+    public string $currentDate = '';
 
     public ?string $selectedBarberId = null;
 
@@ -27,6 +30,8 @@ class AppointmentPlannerWidget extends Widget
     public int $totalCount = 0;
 
     public int $todayCount = 0;
+
+    public int $weekCount = 0;
 
     public int $pendingCount = 0;
 
@@ -43,16 +48,41 @@ class AppointmentPlannerWidget extends Widget
         $this->loadData();
     }
 
+    #[On('refreshAppointmentPlanner')]
+    #[On('appointment-updated')]
+    #[On('appointment-created')]
+    #[On('appointment-deleted')]
+    #[On('filament-tables::refresh')]
+    #[On('close-modal')]
+    public function refreshWidget(): void
+    {
+        $this->loadBarbers();
+        $this->loadData();
+    }
+
+    public function updatedCurrentDate(): void
+    {
+        $this->loadData();
+    }
+
+    public function setDate(string $date): void
+    {
+        $this->currentDate = $date;
+        $this->loadData();
+    }
+
     public function loadBarbers(): void
     {
-        $this->barbers = Barber::canPerformServices()
+        $activeBarbers = Barber::canPerformServices()
             ->select('id', 'firstName', 'lastName')
             ->get()
             ->map(fn ($b) => [
-                'id' => $b->id,
+                'id' => (string) $b->id,
                 'name' => "{$b->firstName} {$b->lastName}",
             ])
             ->toArray();
+
+        $this->barbers = $activeBarbers;
     }
 
     public function setViewMode(string $mode): void
@@ -108,12 +138,19 @@ class AppointmentPlannerWidget extends Widget
                 ->title('Statut mis à jour !')
                 ->success()
                 ->send();
+
             $this->loadData();
+            $this->dispatch('filament-tables::refresh');
+            $this->dispatch('refreshAppointmentPlanner');
         }
     }
 
     public function loadData(): void
     {
+        if (empty($this->currentDate)) {
+            $this->currentDate = Carbon::today()->toDateString();
+        }
+
         $current = Carbon::parse($this->currentDate);
         $today = Carbon::today()->toDateString();
 
@@ -129,35 +166,65 @@ class AppointmentPlannerWidget extends Widget
         }
 
         $query = Appointment::with(['client', 'barber', 'service'])
-            ->whereBetween('date', [$startDate, $endDate]);
+            ->whereDate('date', '>=', $startDate)
+            ->whereDate('date', '<=', $endDate);
 
         if ($this->selectedBarberId) {
             $query->where('barberId', $this->selectedBarberId);
         }
 
-        $appts = $query->get();
+        $appts = $query->orderBy('startTime')->get();
         $this->totalCount = $appts->count();
 
-        // Stats counters
-        $allAppts = Appointment::whereDate('date', $today)->get();
-        $this->todayCount = $allAppts->count();
-        $this->pendingCount = $allAppts->where('status', 'pending')->count();
-        $this->inProgressCount = $allAppts->where('status', 'in_progress')->count();
-        $this->completedCount = $allAppts->where('status', 'completed')->count();
-        $this->cancelledCount = $allAppts->whereIn('status', ['cancelled', 'no_show'])->count();
+        // Week count relative to current date
+        $weekStart = $current->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $weekEnd = $current->copy()->endOfWeek(Carbon::SUNDAY)->toDateString();
+        $this->weekCount = Appointment::whereDate('date', '>=', $weekStart)
+            ->whereDate('date', '<=', $weekEnd)
+            ->count();
+
+        // Stats counters for the current period
+        $this->todayCount = Appointment::whereDate('date', $today)->count();
+        $this->pendingCount = $appts->where('status', 'pending')->count();
+        $this->inProgressCount = $appts->where('status', 'in_progress')->count();
+        $this->completedCount = $appts->where('status', 'completed')->count();
+        $this->cancelledCount = $appts->whereIn('status', ['cancelled', 'no_show'])->count();
+
+        // Ensure any barber who has appointments in the loaded list is also present in $this->barbers
+        $existingBarberIds = array_column($this->barbers, 'id');
+        foreach ($appts as $appt) {
+            if ($appt->barber && ! in_array((string) $appt->barber->id, $existingBarberIds, true)) {
+                $this->barbers[] = [
+                    'id' => (string) $appt->barber->id,
+                    'name' => "{$appt->barber->firstName} {$appt->barber->lastName}",
+                ];
+                $existingBarberIds[] = (string) $appt->barber->id;
+            }
+        }
 
         $this->appointments = $appts->map(function ($a) {
+            $parsedDate = $a->date instanceof Carbon ? $a->date->toDateString() : Carbon::parse($a->date)->toDateString();
+            $startTime = substr((string) $a->startTime, 0, 5);
+            $endTime = substr((string) $a->endTime, 0, 5);
+
+            if (preg_match('/^(\d):(\d{2})$/', $startTime)) {
+                $startTime = '0'.$startTime;
+            }
+            if (preg_match('/^(\d):(\d{2})$/', $endTime)) {
+                $endTime = '0'.$endTime;
+            }
+
             return [
                 'id' => $a->id,
                 'client_name' => $a->client ? "{$a->client->firstName} {$a->client->lastName}" : 'Client anonyme',
                 'client_phone' => $a->client?->phone ?? '',
-                'barber_id' => $a->barberId,
-                'barber_name' => $a->barber ? "{$a->barber->firstName} {$a->barber->lastName}" : 'N/A',
+                'barber_id' => (string) $a->barberId,
+                'barber_name' => $a->barber ? "{$a->barber->firstName} {$a->barber->lastName}" : 'Personnel non assigné',
                 'service_name' => $a->service?->name ?? 'Prestation',
                 'service_price' => (float) ($a->service?->price ?? 0),
-                'date' => Carbon::parse($a->date)->toDateString(),
-                'start_time' => substr((string) $a->startTime, 0, 5),
-                'end_time' => substr((string) $a->endTime, 0, 5),
+                'date' => $parsedDate,
+                'start_time' => $startTime,
+                'end_time' => $endTime,
                 'status' => $a->status,
                 'notes' => $a->notes,
             ];

@@ -3,15 +3,22 @@
 namespace App\Filament\Resources\Appointments\Pages;
 
 use App\Filament\Resources\Appointments\AppointmentResource;
-use App\Filament\Resources\Appointments\Widgets\AppointmentPlannerWidget;
+use App\Models\Appointment;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
+use Livewire\Attributes\Url;
 
 class ListAppointments extends ListRecords
 {
     protected static string $resource = AppointmentResource::class;
+
+    protected string $view = 'filament.resources.appointments.pages.list-appointments';
+
+    #[Url(as: 'tab')]
+    public string $viewTab = 'planner';
 
     public function getTitle(): string|Htmlable
     {
@@ -35,19 +42,27 @@ class ListAppointments extends ListRecords
         ');
     }
 
+    public function getStats(): array
+    {
+        $today = Carbon::today()->toDateString();
+
+        return [
+            'total' => Appointment::count(),
+            'today' => Appointment::whereDate('date', $today)->count(),
+            'completed' => Appointment::where('status', 'completed')->count(),
+            'cancelled' => Appointment::whereIn('status', ['cancelled', 'no_show'])->count(),
+        ];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             Actions\CreateAction::make()
                 ->label('Nouveau rendez-vous')
-                ->slideOver(),
-        ];
-    }
-
-    protected function getHeaderWidgets(): array
-    {
-        return [
-            AppointmentPlannerWidget::class,
+                ->slideOver()
+                ->after(function ($livewire): void {
+                    $livewire->dispatch('refreshAppointmentPlanner');
+                }),
         ];
     }
 }
