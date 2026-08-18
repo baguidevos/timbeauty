@@ -94,7 +94,8 @@
                     @endif
 
                     <x-filament::button
-                        wire:click="$set('showAppointmentModal', true)"
+                        x-on:click="$dispatch('open-modal', { id: 'appointment-modal' })"
+                        type="button"
                         color="info"
                         icon="heroicon-m-calendar-days"
                         size="sm"
@@ -714,7 +715,6 @@
         <!-- ─── Modal Importer un Rendez-vous du jour ───────────────────── -->
         <x-filament::modal
             id="appointment-modal"
-            :open="$showAppointmentModal"
             width="2xl"
             icon="heroicon-o-calendar-days"
             icon-color="info"
@@ -794,6 +794,8 @@
 
                                 <x-filament::button
                                     wire:click="loadAppointment({{ $appt->id }})"
+                                    x-on:click="$dispatch('close-modal', { id: 'appointment-modal' })"
+                                    type="button"
                                     size="sm"
                                     color="warning"
                                     icon="heroicon-m-arrow-right-circle"
@@ -808,7 +810,7 @@
 
             <x-slot name="footerActions">
                 <x-filament::button
-                    wire:click="$set('showAppointmentModal', false)"
+                    x-on:click="$dispatch('close-modal', { id: 'appointment-modal' })"
                     type="button"
                     color="gray"
                 >
