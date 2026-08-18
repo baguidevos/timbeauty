@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Guava\Calendar\Contracts\Resourceable;
+use Guava\Calendar\ValueObjects\CalendarResource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Barber extends Model
+class Barber extends Model implements Resourceable
 {
     use HasFactory;
 
@@ -91,6 +93,12 @@ class Barber extends Model
     public function getFullName(): string
     {
         return $this->firstName.' '.$this->lastName;
+    }
+
+    public function toCalendarResource(): CalendarResource
+    {
+        return CalendarResource::make((string) $this->id)
+            ->title($this->getFullName());
     }
 
     public function isActive(): bool

@@ -39,8 +39,8 @@
 
         <!-- 2. Tab Content -->
         @if($viewTab === 'planner')
-            <!-- TAB 1: Real-time Planner Widget -->
-            @livewire(\App\Filament\Resources\Appointments\Widgets\AppointmentPlannerWidget::class)
+            <!-- TAB 1: Guava Interactive Calendar Widget -->
+            @livewire(\App\Filament\Resources\Appointments\Widgets\AppointmentCalendarWidget::class)
         @else
             <!-- TAB 2: Quick KPI Stat Cards + Table -->
             @php

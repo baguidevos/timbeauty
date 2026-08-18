@@ -1,4 +1,28 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import '../../../../vendor/guava/calendar/resources/css/theme.css';
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
+@source '../../../../vendor/guava/calendar/resources/**/*';
+
+/* Guava Calendar - Dimensions & Espacement des créneaux horaires */
+.ec {
+    --ec-slot-height: 52px;
+}
+
+.ec-time-grid .ec-sidebar {
+    min-width: 64px;
+    font-size: 0.825rem;
+    font-weight: 600;
+}
+
+.ec-event {
+    border-radius: 6px;
+    font-size: 0.85rem;
+    padding: 4px 6px;
+}
+
+.ec-event-title {
+    font-weight: 600;
+}
+

@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Resources\Appointments\Pages\ListAppointments;
+use App\Filament\Resources\Appointments\Widgets\AppointmentCalendarWidget;
 use App\Filament\Resources\Appointments\Widgets\AppointmentPlannerWidget;
 use App\Models\Appointment;
 use App\Models\Barber;
@@ -131,4 +132,33 @@ it('can render ListAppointments page with planner and table tabs', function () {
         ->set('viewTab', 'table')
         ->assertSet('viewTab', 'table')
         ->assertSee('Total Rendez-vous');
+});
+
+it('supports Eventable and Resourceable models for calendar', function () {
+    $today = Carbon::today()->toDateString();
+
+    $appointment = Appointment::create([
+        'clientId' => $this->client->id,
+        'barberId' => $this->barber->id,
+        'serviceId' => $this->service->id,
+        'date' => $today,
+        'startTime' => '10:00',
+        'endTime' => '10:45',
+        'status' => 'confirmed',
+    ]);
+
+    $calendarEvent = $appointment->toCalendarEvent();
+    expect($calendarEvent->getTitle())->toContain('Afi Client')
+        ->and($calendarEvent->getResourceIds())->toBe([(string) $this->barber->id]);
+
+    $calendarResource = $this->barber->toCalendarResource();
+    expect($calendarResource->getTitle())->toBe('Kodjo Barber')
+        ->and($calendarResource->getId())->toBe((string) $this->barber->id);
+});
+
+it('can render appointment calendar widget', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(AppointmentCalendarWidget::class)
+        ->assertSuccessful();
 });
