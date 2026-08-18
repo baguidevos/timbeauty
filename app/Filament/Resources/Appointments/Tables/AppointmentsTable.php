@@ -161,6 +161,13 @@ class AppointmentsTable
                         $livewire->dispatch('refreshAppointmentPlanner');
                     }),
 
+                Action::make('checkout')
+                    ->label('Encaisser au POS')
+                    ->icon('heroicon-o-shopping-cart')
+                    ->color('warning')
+                    ->visible(fn ($record) => in_array($record->status, ['confirmed', 'in_progress', 'completed']) && ! $record->isPaid())
+                    ->url(fn ($record) => route('filament.admin.pages.pos', ['appointment' => $record->id])),
+
                 ViewAction::make()
                     ->slideOver(),
                 EditAction::make()

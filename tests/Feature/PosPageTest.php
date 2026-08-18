@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Pages\Pos;
+use App\Models\Appointment;
 use App\Models\Barber;
 use App\Models\Client;
 use App\Models\Product;
@@ -196,4 +197,60 @@ it('can process sale, decrement product stock and clear session cart', function 
     expect($sale)->not->toBeNull()
         ->and($sale->total)->toEqual(5500)
         ->and($sale->items()->count())->toBe(2);
+});
+
+it('can load appointment into POS and process checkout with linked sale', function () {
+    $this->actingAs($this->admin);
+
+    $appointment = Appointment::create([
+        'clientId' => $this->client->id,
+        'barberId' => $this->barber->id,
+        'serviceId' => $this->service->id,
+        'date' => now()->toDateString(),
+        'startTime' => '14:00',
+        'endTime' => '14:30',
+        'status' => 'confirmed',
+        'notes' => 'Coupe dégradé',
+    ]);
+
+    expect($appointment->isPaid())->toBeFalse();
+
+    Livewire::test(Pos::class)
+        ->call('loadAppointment', $appointment->id)
+        ->assertSet('appointmentId', $appointment->id)
+        ->assertSet('clientId', $this->client->id)
+        ->assertSet('barberId', $this->barber->id)
+        ->assertSet('cart.service_'.$this->service->id.'.quantity', 1)
+        ->call('processSale')
+        ->assertHasNoErrors();
+
+    $sale = Sale::latest()->first();
+    expect($sale->appointmentId)->toBe($appointment->id);
+
+    $appointment->refresh();
+    expect($appointment->status)->toBe('completed')
+        ->and($appointment->isPaid())->toBeTrue()
+        ->and($appointment->sale->id)->toBe($sale->id);
+});
+
+it('can unlink appointment from POS cart', function () {
+    $this->actingAs($this->admin);
+
+    $appointment = Appointment::create([
+        'clientId' => $this->client->id,
+        'barberId' => $this->barber->id,
+        'serviceId' => $this->service->id,
+        'date' => now()->toDateString(),
+        'startTime' => '15:00',
+        'endTime' => '15:30',
+        'status' => 'confirmed',
+    ]);
+
+    Livewire::test(Pos::class)
+        ->call('loadAppointment', $appointment->id)
+        ->assertSet('appointmentId', $appointment->id)
+        ->call('unlinkAppointment')
+        ->assertSet('appointmentId', null);
+
+    expect(session('pos_cart.appointmentId'))->toBeNull();
 });

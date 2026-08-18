@@ -138,7 +138,7 @@ class AppointmentCalendarWidget extends CalendarWidget
 
     protected function getEvents(FetchInfo $info): Collection|array|Builder
     {
-        return Appointment::with(['client', 'barber', 'service'])
+        return Appointment::with(['client', 'barber', 'service', 'sales'])
             ->whereDate('date', '>=', $info->start->toDateString())
             ->whereDate('date', '<=', $info->end->toDateString());
     }
@@ -397,6 +397,14 @@ class AppointmentCalendarWidget extends CalendarWidget
         return parent::editAction()
             ->modalHeading('Détails du rendez-vous')
             ->slideOver()
+            ->extraModalFooterActions(fn (EditAction $action): array => [
+                Action::make('checkoutFromModal')
+                    ->label('Encaisser au POS')
+                    ->icon('heroicon-o-shopping-cart')
+                    ->color('warning')
+                    ->visible(fn () => $action->getRecord() && in_array($action->getRecord()->status, ['confirmed', 'in_progress', 'completed']) && ! $action->getRecord()->isPaid())
+                    ->url(fn () => route('filament.admin.pages.pos', ['appointment' => $action->getRecord()->id])),
+            ])
             ->after(function (): void {
                 Notification::make()
                     ->title('Rendez-vous mis à jour')

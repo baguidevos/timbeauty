@@ -11,6 +11,7 @@ class Sale extends Model
 
     protected $fillable = [
         'clientId',
+        'appointmentId',
         'barberId',
         'subtotal',
         'discountAmount',
@@ -34,6 +35,11 @@ class Sale extends Model
     public function client()
     {
         return $this->belongsTo(Client::class, 'clientId');
+    }
+
+    public function appointment()
+    {
+        return $this->belongsTo(Appointment::class, 'appointmentId');
     }
 
     public function barber()

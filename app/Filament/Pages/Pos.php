@@ -38,6 +38,8 @@ class Pos extends Page
 
     public $clientId = null;
 
+    public $appointmentId = null;
+
     public $barberId = null;
 
     public string $discountType = 'percentage'; // 'percentage' | 'fixed'
@@ -60,6 +62,8 @@ class Pos extends Page
     // Modals
     public bool $showQuickClientModal = false;
 
+    public bool $showAppointmentModal = false;
+
     public string $quickClientFirstName = '';
 
     public string $quickClientLastName = '';
@@ -75,20 +79,100 @@ class Pos extends Page
     public bool $processing = false;
 
     /**
-     * Hydrate cart state from session.
+     * Hydrate cart state from request or session.
      */
     public function mount(): void
     {
-        if (session()->has('pos_cart')) {
+        if (request()->has('appointment')) {
+            $this->loadAppointment((int) request()->get('appointment'));
+        } elseif (session()->has('pos_cart')) {
             $saved = session('pos_cart', []);
             $this->cart = $saved['cart'] ?? [];
             $this->clientId = $saved['clientId'] ?? null;
+            $this->appointmentId = $saved['appointmentId'] ?? null;
             $this->barberId = $saved['barberId'] ?? null;
             $this->discountType = $saved['discountType'] ?? 'percentage';
             $this->discountValue = $saved['discountValue'] ?? 0;
             $this->paymentMethod = $saved['paymentMethod'] ?? 'cash';
             $this->notes = $saved['notes'] ?? '';
         }
+    }
+
+    /**
+     * Load an appointment into the POS cart.
+     */
+    public function loadAppointment(int $appointmentId): void
+    {
+        $appointment = Appointment::with(['client', 'barber', 'service'])->find($appointmentId);
+        if (! $appointment) {
+            Notification::make()
+                ->title('Rendez-vous introuvable')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $this->appointmentId = $appointment->id;
+        $this->clientId = $appointment->clientId;
+        $this->barberId = $appointment->barberId;
+
+        // Clear and populate cart with the appointment service
+        $this->cart = [];
+        if ($appointment->service) {
+            $key = 'service_'.$appointment->service->id;
+            $this->cart[$key] = [
+                'type' => 'service',
+                'itemId' => $appointment->service->id,
+                'name' => $appointment->service->name,
+                'unitPrice' => (float) $appointment->service->price,
+                'duration' => $appointment->service->duration,
+                'quantity' => 1,
+            ];
+        }
+
+        if ($appointment->notes) {
+            $this->notes = 'RDV: '.$appointment->notes;
+        }
+
+        $this->saveCartToSession();
+        $this->showAppointmentModal = false;
+
+        $clientName = $appointment->client ? "{$appointment->client->firstName} {$appointment->client->lastName}" : 'Client';
+        $serviceName = $appointment->service?->name ?? 'Prestation';
+
+        Notification::make()
+            ->title('Rendez-vous chargé au panier')
+            ->body("{$clientName} • {$serviceName}")
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Unlink current appointment from cart.
+     */
+    public function unlinkAppointment(): void
+    {
+        $this->appointmentId = null;
+        $this->saveCartToSession();
+
+        Notification::make()
+            ->title('Liaison RDV retirée')
+            ->info()
+            ->send();
+    }
+
+    /**
+     * Get list of pending appointments for today that are not yet paid.
+     */
+    public function getPendingAppointmentsProperty(): Collection
+    {
+        return Appointment::with(['client', 'barber', 'service'])
+            ->whereDate('date', now()->toDateString())
+            ->whereIn('status', ['confirmed', 'in_progress', 'completed'])
+            ->whereDoesntHave('sales', fn ($q) => $q->where('status', 'completed'))
+            ->orderBy('startTime')
+            ->get();
     }
 
     /**
@@ -99,6 +183,7 @@ class Pos extends Page
         session(['pos_cart' => [
             'cart' => $this->cart,
             'clientId' => $this->clientId ? (int) $this->clientId : null,
+            'appointmentId' => $this->appointmentId ? (int) $this->appointmentId : null,
             'barberId' => $this->barberId ? (int) $this->barberId : null,
             'discountType' => $this->discountType,
             'discountValue' => is_numeric($this->discountValue) ? (float) $this->discountValue : 0,
@@ -109,7 +194,7 @@ class Pos extends Page
 
     public function updated($propertyName): void
     {
-        if (in_array($propertyName, ['clientId', 'barberId', 'discountType', 'discountValue', 'paymentMethod', 'notes'])) {
+        if (in_array($propertyName, ['clientId', 'appointmentId', 'barberId', 'discountType', 'discountValue', 'paymentMethod', 'notes'])) {
             $this->saveCartToSession();
         }
     }
@@ -345,6 +430,7 @@ class Pos extends Page
 
             $sale = Sale::create([
                 'clientId' => $this->clientId ?: null,
+                'appointmentId' => $this->appointmentId ?: null,
                 'barberId' => $this->barberId ?: null,
                 'subtotal' => $subtotal,
                 'discountAmount' => $discountAmount,
@@ -354,6 +440,14 @@ class Pos extends Page
                 'notes' => $this->notes ?: null,
                 'createdBy' => auth()->id(),
             ]);
+
+            // Update linked appointment to completed if necessary
+            if ($this->appointmentId) {
+                $linkedAppointment = Appointment::find($this->appointmentId);
+                if ($linkedAppointment && $linkedAppointment->status !== 'completed') {
+                    $linkedAppointment->update(['status' => 'completed']);
+                }
+            }
 
             foreach ($this->cart as $item) {
                 $lineTotal = $item['unitPrice'] * $item['quantity'];
@@ -418,6 +512,7 @@ class Pos extends Page
             // Clear cart & session
             $this->cart = [];
             $this->clientId = null;
+            $this->appointmentId = null;
             $this->barberId = null;
             $this->discountValue = 0;
             $this->notes = '';

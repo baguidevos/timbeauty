@@ -81,6 +81,7 @@ class Appointment extends Model implements Eventable
                 'barberName' => $barberName,
                 'formattedTime' => "{$startStr} - {$endStr}",
                 'price' => $this->service ? number_format($this->service->price, 0, ',', ' ').' FCFA' : '',
+                'isPaid' => $this->isPaid(),
             ]);
     }
 
@@ -102,5 +103,20 @@ class Appointment extends Model implements Eventable
     public function photos()
     {
         return $this->hasMany(AppointmentPhoto::class, 'appointmentId');
+    }
+
+    public function sale()
+    {
+        return $this->hasOne(Sale::class, 'appointmentId');
+    }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class, 'appointmentId');
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->sales()->where('status', 'completed')->exists();
     }
 }

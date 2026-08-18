@@ -77,6 +77,33 @@
                 </button>
             </template>
 
+            <!-- Completed -> Encaisser au POS (if not yet paid) -->
+            <template x-if="event.extendedProps.status === 'completed' && !event.extendedProps.isPaid">
+                <button
+                    type="button"
+                    title="Encaisser ce rendez-vous en caisse"
+                    @click.stop="window.location.href = '/admin/pos?appointment=' + event.extendedProps.id"
+                    class="px-1.5 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-gray-950 text-[10px] font-extrabold shadow-xs hover:scale-105 transition-all flex items-center gap-0.5 animate-pulse"
+                >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                    <span>Encaisser</span>
+                </button>
+            </template>
+
+            <!-- Completed & Paid -> Payé badge -->
+            <template x-if="event.extendedProps.status === 'completed' && event.extendedProps.isPaid">
+                <span
+                    class="px-1.5 py-0.5 rounded bg-emerald-500/30 border border-emerald-300/40 text-white text-[9px] font-extrabold tracking-wider uppercase flex items-center gap-0.5"
+                >
+                    <svg class="w-3 h-3 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Payé</span>
+                </span>
+            </template>
+
             <!-- Quick Cancel Button (for pending or confirmed) -->
             <template x-if="['pending', 'confirmed'].includes(event.extendedProps.status)">
                 <button

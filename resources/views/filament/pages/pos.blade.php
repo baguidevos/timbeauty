@@ -94,6 +94,15 @@
                     @endif
 
                     <x-filament::button
+                        wire:click="$set('showAppointmentModal', true)"
+                        color="info"
+                        icon="heroicon-m-calendar-days"
+                        size="sm"
+                    >
+                        Importer un RDV ({{ count($this->pendingAppointments) }})
+                    </x-filament::button>
+
+                    <x-filament::button
                         tag="a"
                         :href="route('filament.admin.resources.sales.index')"
                         color="gray"
@@ -351,6 +360,38 @@
                     </x-slot>
 
                     <div class="space-y-4">
+                        @if($appointmentId)
+                            @php
+                                $linkedAppt = \App\Models\Appointment::with(['client', 'service', 'barber'])->find($appointmentId);
+                            @endphp
+                            @if($linkedAppt)
+                                <div class="flex items-center justify-between p-3 rounded-xl bg-info-50 dark:bg-info-950/40 border border-info-200 dark:border-info-800/80 text-xs">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-info-500 text-white shrink-0 shadow-xs">
+                                            <x-heroicon-m-calendar-days class="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-info-900 dark:text-info-100 flex items-center gap-1.5">
+                                                <span>RDV #{{ $linkedAppt->id }}</span>
+                                                <span class="font-mono text-[10px] font-medium bg-info-200/60 dark:bg-info-900 px-1.5 py-0.5 rounded text-info-800 dark:text-info-200">{{ substr($linkedAppt->startTime, 0, 5) }}</span>
+                                            </div>
+                                            <div class="text-[11px] text-info-700 dark:text-info-300 mt-0.5">
+                                                {{ $linkedAppt->service?->name ?? 'Prestation' }} • Coiffeur: {{ $linkedAppt->barber?->firstName ?? '—' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        wire:click="unlinkAppointment"
+                                        class="p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-100/50 dark:hover:bg-rose-950/50 transition-colors"
+                                        title="Délier ce rendez-vous"
+                                    >
+                                        <x-heroicon-m-x-mark class="h-4 w-4" />
+                                    </button>
+                                </div>
+                            @endif
+                        @endif
+
                         <!-- ─── Sélection Client ────────────────────────── -->
                         <div class="space-y-1.5">
                             <div class="flex items-center justify-between">
@@ -666,6 +707,112 @@
                     color="warning"
                 >
                     Enregistrer et sélectionner
+                </x-filament::button>
+            </x-slot>
+        </x-filament::modal>
+
+        <!-- ─── Modal Importer un Rendez-vous du jour ───────────────────── -->
+        <x-filament::modal
+            id="appointment-modal"
+            :open="$showAppointmentModal"
+            width="2xl"
+            icon="heroicon-o-calendar-days"
+            icon-color="info"
+        >
+            <x-slot name="heading">
+                Rendez-vous du jour à encaisser
+            </x-slot>
+
+            <x-slot name="description">
+                Sélectionnez un rendez-vous effectué aujourd'hui pour charger automatiquement le client, la prestation et le coiffeur au panier.
+            </x-slot>
+
+            @php
+                $pendingAppts = $this->pendingAppointments;
+            @endphp
+
+            @if($pendingAppts->isEmpty())
+                <div class="py-8 text-center">
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400">
+                        <x-heroicon-o-calendar class="h-6 w-6" />
+                    </div>
+                    <h3 class="mt-3 text-sm font-semibold text-gray-900 dark:text-white">Aucun rendez-vous en attente</h3>
+                    <p class="mt-1 text-xs text-gray-500">Tous les rendez-vous du jour ont été réglés ou aucun n'est prévu.</p>
+                </div>
+            @else
+                <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-96 overflow-y-auto pr-1">
+                    @foreach($pendingAppts as $appt)
+                        <div class="py-3 flex items-center justify-between gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 p-2.5 rounded-xl transition-colors">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info-100 dark:bg-info-950/60 text-info-600 dark:text-info-400 font-mono font-bold text-xs">
+                                    {{ substr($appt->startTime, 0, 5) }}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-bold text-sm text-gray-900 dark:text-white truncate">
+                                            {{ $appt->client ? "{$appt->client->firstName} {$appt->client->lastName}" : 'Client anonyme' }}
+                                        </p>
+                                        @php
+                                            $statusColor = match($appt->status) {
+                                                'completed' => 'success',
+                                                'in_progress' => 'info',
+                                                'confirmed' => 'primary',
+                                                default => 'warning'
+                                            };
+                                            $statusLabel = match($appt->status) {
+                                                'completed' => 'Terminé',
+                                                'in_progress' => 'En cours',
+                                                'confirmed' => 'Confirmé',
+                                                default => 'En attente'
+                                            };
+                                        @endphp
+                                        <x-filament::badge :color="$statusColor" size="xs">
+                                            {{ $statusLabel }}
+                                        </x-filament::badge>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                        Prestation : <span class="font-medium text-gray-700 dark:text-gray-300">{{ $appt->service?->name ?? '—' }}</span>
+                                        • Coiffeur : <span class="font-medium text-gray-700 dark:text-gray-300">{{ $appt->barber ? "{$appt->barber->firstName} {$appt->barber->lastName}" : '—' }}</span>
+                                    </p>
+                                    @if($appt->client?->phone)
+                                        <p class="text-[11px] text-gray-400 font-mono mt-0.5">
+                                            📞 {{ $appt->client->phone }}
+                                        </p>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-3 shrink-0">
+                                <div class="text-right">
+                                    <div class="text-sm font-extrabold text-amber-600 dark:text-amber-400">
+                                        {{ $appt->service ? \App\Helpers\FormatHelper::formatFCFA($appt->service->price) : '0 FCFA' }}
+                                    </div>
+                                    <div class="text-[10px] text-gray-400">
+                                        {{ $appt->service?->duration ?? 0 }} min
+                                    </div>
+                                </div>
+
+                                <x-filament::button
+                                    wire:click="loadAppointment({{ $appt->id }})"
+                                    size="sm"
+                                    color="warning"
+                                    icon="heroicon-m-arrow-right-circle"
+                                >
+                                    Charger
+                                </x-filament::button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            <x-slot name="footerActions">
+                <x-filament::button
+                    wire:click="$set('showAppointmentModal', false)"
+                    type="button"
+                    color="gray"
+                >
+                    Fermer
                 </x-filament::button>
             </x-slot>
         </x-filament::modal>
