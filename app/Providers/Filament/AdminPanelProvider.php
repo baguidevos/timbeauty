@@ -92,10 +92,10 @@ class AdminPanelProvider extends PanelProvider
                 fn (): View => view('filament.resources.expenses.components.expense-category-badges'),
                 scopes: ListExpenses::class,
             )
-            ->renderHook(
-                'panels::body.end',
-                fn () => Blade::render('<link rel="stylesheet" href="/css/filament-custom.css">'),
-            )
+            // ->renderHook(
+            //     'panels::body.end',
+            //     fn () => Blade::render('<link rel="stylesheet" href="/css/filament-custom.css">'),
+            // )
 
             ->navigationGroups([
                 NavigationGroup::make()

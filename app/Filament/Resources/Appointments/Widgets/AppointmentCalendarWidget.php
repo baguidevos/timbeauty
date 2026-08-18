@@ -5,10 +5,13 @@ namespace App\Filament\Resources\Appointments\Widgets;
 use App\Filament\Resources\Appointments\Schemas\AppointmentForm;
 use App\Models\Appointment;
 use App\Models\Barber;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Guava\Calendar\Enums\CalendarViewType;
 use Guava\Calendar\Filament\Actions\CreateAction;
+use Guava\Calendar\Filament\Actions\EditAction;
+use Guava\Calendar\Filament\Actions\ViewAction;
 use Guava\Calendar\Filament\CalendarWidget;
 use Guava\Calendar\ValueObjects\DateClickInfo;
 use Guava\Calendar\ValueObjects\DateSelectInfo;
@@ -50,6 +53,39 @@ class AppointmentCalendarWidget extends CalendarWidget
     {
         $this->refreshRecords();
         $this->refreshResources();
+    }
+
+    protected function eventContent(): HtmlString|string
+    {
+        return view('filament.resources.appointments.components.calendar-event-content')->render();
+    }
+
+    public function updateAppointmentStatus(int|string $appointmentId, string $newStatus): void
+    {
+        $appointment = Appointment::find($appointmentId);
+        if (! $appointment) {
+            return;
+        }
+
+        $appointment->update(['status' => $newStatus]);
+
+        $statusLabel = match ($newStatus) {
+            'confirmed' => 'Confirmé',
+            'in_progress' => 'En cours',
+            'completed' => 'Terminé',
+            'cancelled' => 'Annulé',
+            'no_show' => 'Absent',
+            default => $newStatus,
+        };
+
+        Notification::make()
+            ->title("Rendez-vous : {$statusLabel}")
+            ->success()
+            ->send();
+
+        $this->refreshRecords();
+        $this->dispatch('refreshAppointmentPlanner');
+        $this->dispatch('filament-tables::refresh');
     }
 
     public function getOptions(): array
@@ -217,12 +253,180 @@ class AppointmentCalendarWidget extends CalendarWidget
         return true;
     }
 
-    protected function getEventClickContextMenuActions(): array
+    public function confirmAppointmentAction(): Action
+    {
+        return Action::make('confirmAppointment')
+            ->label('Confirmer le RDV')
+            ->icon('heroicon-o-check-circle')
+            ->color('info')
+            ->requiresConfirmation()
+            ->modalHeading('Confirmer le rendez-vous')
+            ->modalDescription('Voulez-vous marquer ce rendez-vous comme confirmé ?')
+            ->visible(fn (): bool => $this->getEventRecord()?->status === 'pending')
+            ->action(function (): void {
+                $record = $this->getEventRecord();
+                if (! $record) {
+                    return;
+                }
+
+                $record->update(['status' => 'confirmed']);
+
+                Notification::make()
+                    ->title('Rendez-vous confirmé')
+                    ->success()
+                    ->send();
+
+                $this->refreshRecords();
+                $this->dispatch('refreshAppointmentPlanner');
+                $this->dispatch('filament-tables::refresh');
+            });
+    }
+
+    public function startAppointmentAction(): Action
+    {
+        return Action::make('startAppointment')
+            ->label('Démarrer la prestation')
+            ->icon('heroicon-o-play')
+            ->color('primary')
+            ->visible(fn (): bool => in_array($this->getEventRecord()?->status, ['pending', 'confirmed']))
+            ->action(function (): void {
+                $record = $this->getEventRecord();
+                if (! $record) {
+                    return;
+                }
+
+                $record->update(['status' => 'in_progress']);
+
+                Notification::make()
+                    ->title('Prestation en cours')
+                    ->success()
+                    ->send();
+
+                $this->refreshRecords();
+                $this->dispatch('refreshAppointmentPlanner');
+                $this->dispatch('filament-tables::refresh');
+            });
+    }
+
+    public function completeAppointmentAction(): Action
+    {
+        return Action::make('completeAppointment')
+            ->label('Terminer la prestation')
+            ->icon('heroicon-o-check-badge')
+            ->color('success')
+            ->visible(fn (): bool => in_array($this->getEventRecord()?->status, ['confirmed', 'in_progress']))
+            ->action(function (): void {
+                $record = $this->getEventRecord();
+                if (! $record) {
+                    return;
+                }
+
+                $record->update(['status' => 'completed']);
+
+                Notification::make()
+                    ->title('Rendez-vous terminé avec succès')
+                    ->success()
+                    ->send();
+
+                $this->refreshRecords();
+                $this->dispatch('refreshAppointmentPlanner');
+                $this->dispatch('filament-tables::refresh');
+            });
+    }
+
+    public function cancelAppointmentAction(): Action
+    {
+        return Action::make('cancelAppointment')
+            ->label('Annuler le rendez-vous')
+            ->icon('heroicon-o-x-circle')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Annuler le rendez-vous')
+            ->modalDescription('Êtes-vous sûr de vouloir annuler ce rendez-vous ?')
+            ->visible(fn (): bool => in_array($this->getEventRecord()?->status, ['pending', 'confirmed', 'in_progress']))
+            ->action(function (): void {
+                $record = $this->getEventRecord();
+                if (! $record) {
+                    return;
+                }
+
+                $record->update(['status' => 'cancelled']);
+
+                Notification::make()
+                    ->title('Rendez-vous annulé')
+                    ->warning()
+                    ->send();
+
+                $this->refreshRecords();
+                $this->dispatch('refreshAppointmentPlanner');
+                $this->dispatch('filament-tables::refresh');
+            });
+    }
+
+    public function noShowAppointmentAction(): Action
+    {
+        return Action::make('noShowAppointment')
+            ->label('Marquer Absent (No-show)')
+            ->icon('heroicon-o-user-minus')
+            ->color('gray')
+            ->requiresConfirmation()
+            ->modalHeading('Marquer le client comme absent')
+            ->modalDescription('Voulez-vous marquer ce client comme non présenté ?')
+            ->visible(fn (): bool => in_array($this->getEventRecord()?->status, ['pending', 'confirmed']))
+            ->action(function (): void {
+                $record = $this->getEventRecord();
+                if (! $record) {
+                    return;
+                }
+
+                $record->update(['status' => 'no_show']);
+
+                Notification::make()
+                    ->title('Rendez-vous marqué absent')
+                    ->warning()
+                    ->send();
+
+                $this->refreshRecords();
+                $this->dispatch('refreshAppointmentPlanner');
+                $this->dispatch('filament-tables::refresh');
+            });
+    }
+
+    public function editAction(): EditAction
+    {
+        return parent::editAction()
+            ->modalHeading('Détails du rendez-vous')
+            ->slideOver()
+            ->after(function (): void {
+                Notification::make()
+                    ->title('Rendez-vous mis à jour')
+                    ->success()
+                    ->send();
+
+                $this->refreshRecords();
+                $this->dispatch('refreshAppointmentPlanner');
+                $this->dispatch('filament-tables::refresh');
+            });
+    }
+
+    public function viewAction(): ViewAction
+    {
+        return parent::viewAction()
+            ->modalHeading('Détails du rendez-vous')
+            ->slideOver();
+    }
+
+    protected function getDateClickContextMenuActions(): array
     {
         return [
-            $this->viewAction()->slideOver(),
-            $this->editAction()->slideOver(),
-            $this->deleteAction(),
+            $this->createAppointmentAction(),
         ];
     }
+
+    // protected function getDateSelectContextMenuActions(): array
+    // {
+    //     return [
+    //         $this->createAppointmentAction(),
+    //     ];
+    // }
 }

@@ -65,11 +65,22 @@ class Appointment extends Model implements Eventable
             ->resourceId((string) $this->barberId)
             ->backgroundColor($color)
             ->extendedProps([
+                'id' => $this->id,
                 'status' => $this->status,
+                'statusLabel' => match ($this->status) {
+                    'confirmed' => 'Confirmé',
+                    'in_progress' => 'En cours',
+                    'completed' => 'Terminé',
+                    'cancelled' => 'Annulé',
+                    'no_show' => 'Absent',
+                    default => 'En attente',
+                },
                 'clientName' => $clientName,
                 'clientPhone' => $this->client?->phone ?? '',
                 'serviceName' => $serviceName,
                 'barberName' => $barberName,
+                'formattedTime' => "{$startStr} - {$endStr}",
+                'price' => $this->service ? number_format($this->service->price, 0, ',', ' ').' FCFA' : '',
             ]);
     }
 
