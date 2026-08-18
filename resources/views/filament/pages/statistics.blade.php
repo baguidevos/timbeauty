@@ -1,24 +1,36 @@
 <x-filament-panels::page>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <x-filament::section>
-            <x-slot:name>Chiffre d'affaires du jour</x-slot:name>
-            <div class="text-2xl font-bold text-primary-600">0 FCFA</div>
-        </x-filament::section>
-        <x-filament::section>
-            <x-slot:name>Rendez-vous aujourd'hui</x-slot:name>
-            <div class="text-2xl font-bold text-primary-600">0</div>
-        </x-filament::section>
-        <x-filament::section>
-            <x-slot:name>Clients actifs</x-slot:name>
-            <div class="text-2xl font-bold text-primary-600">0</div>
-        </x-filament::section>
-        <x-filament::section>
-            <x-slot:name>Produits en stock</x-slot:name>
-            <div class="text-2xl font-bold text-primary-600">0</div>
-        </x-filament::section>
+    <div class="space-y-6">
+        <!-- 1. KPI Overview -->
+        @livewire(\App\Filament\Widgets\KpiOverviewWidget::class)
+
+        <!-- 2. Charts & Targets -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div class="lg:col-span-7">
+                @livewire(\App\Filament\Widgets\RevenueChartWidget::class)
+            </div>
+            <div class="lg:col-span-5">
+                @livewire(\App\Filament\Widgets\RevenueTargetWidget::class)
+            </div>
+        </div>
+
+        <!-- 3. Top Rankings (Services & Barbers) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div>
+                @livewire(\App\Filament\Widgets\TopServicesWidget::class)
+            </div>
+            <div>
+                @livewire(\App\Filament\Widgets\TopBarbersWidget::class)
+            </div>
+        </div>
+
+        <!-- 4. Recent Transactions (Sales & Expenses) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div>
+                @livewire(\App\Filament\Widgets\RecentSalesWidget::class)
+            </div>
+            <div>
+                @livewire(\App\Filament\Widgets\RecentExpensesWidget::class)
+            </div>
+        </div>
     </div>
-    <x-filament::section>
-        <x-slot:name>Statistiques détaillées</x-slot:name>
-        <p class="text-gray-500">Les graphiques et statistiques détaillées seront disponibles prochainement.</p>
-    </x-filament::section>
 </x-filament-panels::page>
