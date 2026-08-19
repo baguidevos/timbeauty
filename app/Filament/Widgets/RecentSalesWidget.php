@@ -33,8 +33,14 @@ class RecentSalesWidget extends BaseWidget
                     ->searchable()
                     ->placeholder('—')
                     ->limit(15),
+                Tables\Columns\TextColumn::make('discountAmount')
+                    ->label('Remise')
+                    ->formatStateUsing(fn ($state) => $state > 0 ? '- '.FormatHelper::formatFCFA($state) : null)
+                    ->color('danger')
+                    ->badge(fn ($state) => $state > 0)
+                    ->alignEnd(),
                 Tables\Columns\TextColumn::make('total')
-                    ->label('Total')
+                    ->label('Total Net')
                     ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state))
                     ->weight('medium')
                     ->color('warning'),

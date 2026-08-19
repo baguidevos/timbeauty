@@ -25,6 +25,12 @@
                         @endif
                         <span class="text-gray-400 font-normal">vs hier</span>
                     </span>
+
+                    @if($todayDiscountTotal > 0)
+                        <span class="text-[11px] font-medium text-rose-500">
+                            Remises: -{{ \App\Helpers\FormatHelper::formatFCFA($todayDiscountTotal) }}
+                        </span>
+                    @endif
                 </div>
                 <!-- Mini Progress Bar -->
                 @php $todayPct = min(($todayRevenue / max($dailyGoal, 1)) * 100, 100); @endphp
@@ -49,8 +55,13 @@
                 <p class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white tabular-nums">
                     {{ \App\Helpers\FormatHelper::formatFCFA($monthRevenue) }}
                 </p>
-                <div class="mt-1 text-xs text-gray-400">
-                    1er du mois — aujourd'hui
+                <div class="mt-1 flex items-center justify-between text-xs text-gray-400">
+                    <span>1er du mois — aujourd'hui</span>
+                    @if($monthDiscountTotal > 0)
+                        <span class="text-[11px] font-medium text-rose-500">
+                            Remises: -{{ \App\Helpers\FormatHelper::formatFCFA($monthDiscountTotal) }}
+                        </span>
+                    @endif
                 </div>
                 <!-- Mini Progress Bar -->
                 @php $monthPct = min(($monthRevenue / max($monthlyGoal, 1)) * 100, 100); @endphp

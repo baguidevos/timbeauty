@@ -29,8 +29,21 @@ class SalesTable
                     ->label('Coiffeur')
                     ->formatStateUsing(fn ($record) => $record->barber?->firstName.' '.$record->barber?->lastName)
                     ->searchable(),
+                TextColumn::make('subtotal')
+                    ->label('Sous-total')
+                    ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state))
+                    ->sortable()
+                    ->alignEnd()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('discountAmount')
+                    ->label('Remise')
+                    ->formatStateUsing(fn ($state) => $state > 0 ? '- '.FormatHelper::formatFCFA($state) : '—')
+                    ->color(fn ($state) => $state > 0 ? 'danger' : 'gray')
+                    ->badge(fn ($state) => $state > 0)
+                    ->sortable()
+                    ->alignEnd(),
                 TextColumn::make('total')
-                    ->label('Total')
+                    ->label('Total Net')
                     ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state))
                     ->sortable()
                     ->alignEnd(),
@@ -68,6 +81,9 @@ class SalesTable
                     ->sortable(),
             ])
             ->filters([
+                Tables\Filters\Filter::make('has_discount')
+                    ->label('Avec remise uniquement')
+                    ->query(fn ($query) => $query->where('discountAmount', '>', 0)),
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Statut')
                     ->options([

@@ -23,6 +23,10 @@ class KpiOverviewWidget extends Widget
 
     public float $monthRevenue = 0;
 
+    public float $todayDiscountTotal = 0;
+
+    public float $monthDiscountTotal = 0;
+
     public int $todayAppointments = 0;
 
     public int $yesterdayAppointments = 0;
@@ -69,6 +73,14 @@ class KpiOverviewWidget extends Widget
         $this->monthRevenue = (float) Sale::where('status', 'completed')
             ->whereDate('created_at', '>=', $monthStart)
             ->sum('total');
+
+        $this->todayDiscountTotal = (float) Sale::where('status', 'completed')
+            ->whereDate('created_at', $today)
+            ->sum('discountAmount');
+
+        $this->monthDiscountTotal = (float) Sale::where('status', 'completed')
+            ->whereDate('created_at', '>=', $monthStart)
+            ->sum('discountAmount');
 
         // Target for the month
         $targetModel = RevenueTarget::where('type', 'shop')

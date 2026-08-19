@@ -14,7 +14,7 @@ use Filament\Tables\Table;
 
 class SalesRelationManager extends RelationManager
 {
-    protected static string $relationshipName = 'sales';
+    protected static string $relationship = 'sales';
 
     protected static ?string $title = 'Ventes';
 
@@ -65,8 +65,19 @@ class SalesRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('barber.firstName')
                     ->label('Coiffeur')
                     ->formatStateUsing(fn ($record) => $record->barber?->firstName.' '.$record->barber?->lastName),
+                Tables\Columns\TextColumn::make('subtotal')
+                    ->label('Sous-total')
+                    ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state))
+                    ->alignEnd()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('discountAmount')
+                    ->label('Remise')
+                    ->formatStateUsing(fn ($state) => $state > 0 ? '- '.FormatHelper::formatFCFA($state) : '—')
+                    ->color(fn ($state) => $state > 0 ? 'danger' : 'gray')
+                    ->badge(fn ($state) => $state > 0)
+                    ->alignEnd(),
                 Tables\Columns\TextColumn::make('total')
-                    ->label('Total')
+                    ->label('Total Net')
                     ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state))
                     ->alignEnd(),
                 Tables\Columns\TextColumn::make('paymentMethod')

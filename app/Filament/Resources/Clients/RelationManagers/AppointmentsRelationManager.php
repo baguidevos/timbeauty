@@ -13,7 +13,7 @@ use Filament\Tables\Table;
 
 class AppointmentsRelationManager extends RelationManager
 {
-    protected static string $relationshipName = 'appointments';
+    protected static string $relationship = 'appointments';
 
     protected static ?string $title = 'Rendez-vous';
 
