@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Resources\Expenses\Pages\ListExpenses;
 use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Services\Pages\ListServices;
+use App\Models\Setting;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -50,7 +51,10 @@ class AdminPanelProvider extends PanelProvider
                 'success' => Color::Emerald,
                 'warning' => Color::Amber,
             ])
-            ->brandName('💈 BarberShop Pro')
+            ->brandName(fn () => Setting::get('shop_name', 'BarberShop Pro'))
+            ->brandLogo(fn () => view('filament.components.brand-logo', ['isDark' => false]))
+            ->darkModeBrandLogo(fn () => view('filament.components.brand-logo', ['isDark' => true]))
+            ->brandLogoHeight('2.75rem')
             ->discoverClusters(in: app_path('Filament/Clusters'), for: 'App\Filament\Clusters')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
 

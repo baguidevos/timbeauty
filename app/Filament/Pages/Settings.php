@@ -88,7 +88,7 @@ class Settings extends Page
         $this->shop_address = (string) Setting::get('shop_address', 'Quartier des Affaires, Lomé, Togo');
         $this->currency = (string) Setting::get('currency', 'FCFA');
         $this->default_opening_time = (string) Setting::get('default_opening_time', '08:00');
-        $this->default_closing_time = (string) Setting::get('default_closing_time', '18:00');
+        $this->default_closing_time = (string) Setting::get('default_closing_time', '22:00');
 
         // Caisse
         $this->cash_register_mode = (string) Setting::get('cash_register_mode', 'auto_open');
