@@ -6,6 +6,8 @@ use App\Models\Barber;
 use App\Models\Client;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\Promotion;
+use App\Models\PromotionUsage;
 use App\Models\Sale;
 use App\Models\Service;
 use App\Models\ServiceCategory;
@@ -253,4 +255,62 @@ it('can unlink appointment from POS cart', function () {
         ->assertSet('appointmentId', null);
 
     expect(session('pos_cart.appointmentId'))->toBeNull();
+});
+
+it('can select an active promotion in POS, calculate discount, and record usage upon checkout', function () {
+    $this->actingAs($this->admin);
+
+    $promo = Promotion::create([
+        'name' => 'Offre Rentrée 20%',
+        'type' => 'percentage',
+        'value' => 20,
+        'status' => 'active',
+        'currentUsages' => 0,
+        'maxUsages' => 50,
+    ]);
+
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id) // 3500 FCFA
+        ->set('clientId', $this->client->id)
+        ->call('applyPromotion', $promo->id)
+        ->assertSet('selectedPromotionId', $promo->id)
+        ->assertSet('discountType', 'percentage')
+        ->assertSet('discountValue', 20)
+        ->assertSee('Offre Rentrée 20%')
+        ->call('processSale')
+        ->assertHasNoErrors();
+
+    $sale = Sale::latest()->first();
+    expect((float) $sale->subtotal)->toBe(3500.0)
+        ->and((float) $sale->discountAmount)->toBe(700.0) // 20% of 3500
+        ->and((float) $sale->total)->toBe(2800.0);
+
+    // Verify PromotionUsage record
+    $usage = PromotionUsage::where('saleId', $sale->id)->first();
+    expect($usage)->not->toBeNull()
+        ->and($usage->promotionId)->toBe($promo->id)
+        ->and($usage->clientId)->toBe($this->client->id);
+
+    // Verify incremented usages
+    expect($promo->fresh()->currentUsages)->toBe(1);
+});
+
+it('can remove an applied promotion from POS cart', function () {
+    $this->actingAs($this->admin);
+
+    $promo = Promotion::create([
+        'name' => 'Réduction 1000 FCFA',
+        'type' => 'fixed',
+        'value' => 1000,
+        'status' => 'active',
+    ]);
+
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->call('applyPromotion', $promo->id)
+        ->assertSet('selectedPromotionId', $promo->id)
+        ->assertSet('discountValue', 1000)
+        ->call('removePromotion')
+        ->assertSet('selectedPromotionId', null)
+        ->assertSet('discountValue', 0);
 });

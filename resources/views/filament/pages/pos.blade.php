@@ -5,6 +5,7 @@
         $popularServices = $this->getPopularServices();
         $clients = $this->getClients();
         $barbers = $this->getBarbers();
+        $activePromotions = $this->activePromotions;
         $subtotal = $this->getSubtotal();
         $discountAmount = $this->getDiscountAmount();
         $total = $this->getTotal();
@@ -548,8 +549,40 @@
                                 </span>
                             </div>
 
-                            <!-- Remise -->
-                            <div class="flex items-center justify-between gap-2 text-xs">
+                            <!-- Sélection de Promotion -->
+                            <div class="space-y-1.5 pt-1 border-t border-amber-500/20">
+                                <div class="flex items-center justify-between text-xs">
+                                    <label class="flex items-center gap-1 font-semibold text-gray-700 dark:text-gray-300">
+                                        <x-heroicon-m-sparkles class="h-3.5 w-3.5 text-amber-500" />
+                                        Promotion / Offre
+                                    </label>
+                                    @if($selectedPromotionId)
+                                        <button
+                                            type="button"
+                                            wire:click="removePromotion"
+                                            class="text-[11px] font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 hover:underline inline-flex items-center gap-0.5"
+                                        >
+                                            <x-heroicon-m-x-mark class="h-3 w-3" /> Retirer
+                                        </button>
+                                    @endif
+                                </div>
+                                <x-filament::input.wrapper size="sm">
+                                    <x-filament::input.select
+                                        wire:model.live="selectedPromotionId"
+                                    >
+                                        <option value="">-- Aucune promotion (ou remise libre) --</option>
+                                        @foreach($activePromotions as $promo)
+                                            <option value="{{ $promo->id }}">
+                                                🏷️ {{ $promo->name }} ({{ $promo->formatted_value }})
+                                                @if($promo->forLoyalOnly) [⭐ Fidèle] @endif
+                                            </option>
+                                        @endforeach
+                                    </x-filament::input.select>
+                                </x-filament::input.wrapper>
+                            </div>
+
+                            <!-- Remise manuelle / Calculée -->
+                            <div class="flex items-center justify-between gap-2 text-xs pt-1 border-t border-amber-500/10">
                                 <div class="flex items-center gap-1.5">
                                     <x-heroicon-m-tag class="h-3.5 w-3.5 text-amber-600" />
                                     <span class="font-medium text-gray-600 dark:text-gray-300">Remise</span>

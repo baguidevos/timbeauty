@@ -8,6 +8,8 @@ use App\Models\Barber;
 use App\Models\Client;
 use App\Models\LoyaltyPointTransaction;
 use App\Models\Product;
+use App\Models\Promotion;
+use App\Models\PromotionUsage;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Service;
@@ -41,6 +43,8 @@ class Pos extends Page
     public $appointmentId = null;
 
     public $barberId = null;
+
+    public $selectedPromotionId = null;
 
     public string $discountType = 'percentage'; // 'percentage' | 'fixed'
 
@@ -91,6 +95,7 @@ class Pos extends Page
             $this->clientId = $saved['clientId'] ?? null;
             $this->appointmentId = $saved['appointmentId'] ?? null;
             $this->barberId = $saved['barberId'] ?? null;
+            $this->selectedPromotionId = $saved['selectedPromotionId'] ?? null;
             $this->discountType = $saved['discountType'] ?? 'percentage';
             $this->discountValue = $saved['discountValue'] ?? 0;
             $this->paymentMethod = $saved['paymentMethod'] ?? 'cash';
@@ -185,6 +190,7 @@ class Pos extends Page
             'clientId' => $this->clientId ? (int) $this->clientId : null,
             'appointmentId' => $this->appointmentId ? (int) $this->appointmentId : null,
             'barberId' => $this->barberId ? (int) $this->barberId : null,
+            'selectedPromotionId' => $this->selectedPromotionId ? (int) $this->selectedPromotionId : null,
             'discountType' => $this->discountType,
             'discountValue' => is_numeric($this->discountValue) ? (float) $this->discountValue : 0,
             'paymentMethod' => $this->paymentMethod,
@@ -194,9 +200,125 @@ class Pos extends Page
 
     public function updated($propertyName): void
     {
-        if (in_array($propertyName, ['clientId', 'appointmentId', 'barberId', 'discountType', 'discountValue', 'paymentMethod', 'notes'])) {
+        if (in_array($propertyName, ['clientId', 'appointmentId', 'barberId', 'selectedPromotionId', 'discountType', 'discountValue', 'paymentMethod', 'notes'])) {
             $this->saveCartToSession();
         }
+    }
+
+    public function updatedSelectedPromotionId($value): void
+    {
+        $this->applyPromotion($value ? (int) $value : null);
+    }
+
+    public function applyPromotion(?int $promotionId): void
+    {
+        if (! $promotionId) {
+            $this->selectedPromotionId = null;
+            $this->discountValue = 0;
+            $this->saveCartToSession();
+
+            return;
+        }
+
+        $promotion = Promotion::with('services')->find($promotionId);
+        if (! $promotion || ! $promotion->isActive()) {
+            $this->selectedPromotionId = null;
+            $this->discountValue = 0;
+            $this->saveCartToSession();
+
+            Notification::make()
+                ->title('Cette promotion n\'est pas active ou est expirée.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        // Check client constraints
+        if ($this->clientId) {
+            $client = Client::find($this->clientId);
+            if ($client) {
+                if ($promotion->forLoyalOnly && ! $client->isLoyal) {
+                    $this->selectedPromotionId = null;
+                    $this->discountValue = 0;
+                    $this->saveCartToSession();
+
+                    Notification::make()
+                        ->title('Offre réservée exclusivement aux clients avec badge "Fidèle".')
+                        ->warning()
+                        ->send();
+
+                    return;
+                }
+
+                if ($promotion->minVisits > 0 && ($client->totalVisits ?? 0) < $promotion->minVisits) {
+                    $this->selectedPromotionId = null;
+                    $this->discountValue = 0;
+                    $this->saveCartToSession();
+
+                    Notification::make()
+                        ->title("Visites insuffisantes pour cette offre ({$client->totalVisits}/{$promotion->minVisits} visites requises).")
+                        ->warning()
+                        ->send();
+
+                    return;
+                }
+            }
+        } elseif ($promotion->forLoyalOnly || $promotion->minVisits > 0) {
+            $this->selectedPromotionId = null;
+            $this->discountValue = 0;
+            $this->saveCartToSession();
+
+            Notification::make()
+                ->title('Veuillez sélectionner un client pour vérifier l\'éligibilité à cette offre.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->selectedPromotionId = $promotion->id;
+
+        if ($promotion->type === 'percentage') {
+            $this->discountType = 'percentage';
+            $this->discountValue = (float) $promotion->value;
+        } elseif ($promotion->type === 'fixed') {
+            $this->discountType = 'fixed';
+            $this->discountValue = (float) $promotion->value;
+        } elseif ($promotion->type === 'free_service') {
+            $eligibleServiceIds = $promotion->services->pluck('id')->toArray();
+            $discount = 0;
+            foreach ($this->cart as $item) {
+                if ($item['type'] === 'service') {
+                    if (empty($eligibleServiceIds) || in_array($item['itemId'], $eligibleServiceIds)) {
+                        $discount = max($discount, (float) $item['unitPrice']);
+                    }
+                }
+            }
+            $this->discountType = 'fixed';
+            $this->discountValue = $discount > 0 ? $discount : 0;
+        }
+
+        $this->saveCartToSession();
+
+        Notification::make()
+            ->title("Promotion « {$promotion->name} » appliquée !")
+            ->body("Remise : {$promotion->formatted_value}")
+            ->success()
+            ->send();
+    }
+
+    public function removePromotion(): void
+    {
+        $this->selectedPromotionId = null;
+        $this->discountValue = 0;
+        $this->saveCartToSession();
+
+        Notification::make()
+            ->title('Promotion retirée')
+            ->info()
+            ->duration(1500)
+            ->send();
     }
 
     /**
@@ -337,6 +459,7 @@ class Pos extends Page
     public function clearCart(): void
     {
         $this->cart = [];
+        $this->selectedPromotionId = null;
         $this->discountValue = 0;
         $this->notes = '';
         session()->forget('pos_cart');
@@ -480,6 +603,19 @@ class Pos extends Page
                 }
             }
 
+            // Record promotion usage if a promotion was applied
+            if ($this->selectedPromotionId) {
+                $appliedPromo = Promotion::find($this->selectedPromotionId);
+                if ($appliedPromo) {
+                    PromotionUsage::create([
+                        'promotionId' => $appliedPromo->id,
+                        'clientId' => $sale->clientId,
+                        'saleId' => $sale->id,
+                    ]);
+                    $appliedPromo->increment('currentUsages');
+                }
+            }
+
             // Update client loyalty & stats if client is attached
             if ($sale->clientId) {
                 $client = Client::find($sale->clientId);
@@ -514,6 +650,7 @@ class Pos extends Page
             $this->clientId = null;
             $this->appointmentId = null;
             $this->barberId = null;
+            $this->selectedPromotionId = null;
             $this->discountValue = 0;
             $this->notes = '';
             session()->forget('pos_cart');
@@ -537,6 +674,23 @@ class Pos extends Page
         } finally {
             $this->processing = false;
         }
+    }
+
+    public function getActivePromotionsProperty(): Collection
+    {
+        $today = now()->toDateString();
+
+        return Promotion::where('status', 'active')
+            ->where(function ($q) use ($today) {
+                $q->whereNull('startDate')->orWhere('startDate', '<=', $today);
+            })
+            ->where(function ($q) use ($today) {
+                $q->whereNull('endDate')->orWhere('endDate', '>=', $today);
+            })
+            ->where(function ($q) {
+                $q->whereNull('maxUsages')->orWhereRaw('currentUsages < maxUsages');
+            })
+            ->get();
     }
 
     // ─── Calculations ────────────────────────────────────────────────
