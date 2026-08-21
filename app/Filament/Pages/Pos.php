@@ -101,6 +101,11 @@ class Pos extends Page
             $this->paymentMethod = $saved['paymentMethod'] ?? 'cash';
             $this->notes = $saved['notes'] ?? '';
         }
+
+        if (request()->has('client')) {
+            $this->clientId = (int) request()->get('client');
+            $this->saveCartToSession();
+        }
     }
 
     /**
