@@ -279,6 +279,27 @@ class Pos extends Page
 
         $this->selectedPromotionId = $promotion->id;
 
+        $eligibleServiceIds = $promotion->services->pluck('id')->toArray();
+        $hasEligibleInCart = false;
+
+        foreach ($this->cart as $item) {
+            if ($item['type'] === 'service') {
+                if (empty($eligibleServiceIds) || in_array((int) $item['itemId'], $eligibleServiceIds, true)) {
+                    $hasEligibleInCart = true;
+                    break;
+                }
+            }
+        }
+
+        if (! empty($eligibleServiceIds) && ! $hasEligibleInCart) {
+            $eligibleNames = $promotion->services->pluck('name')->implode(', ');
+            Notification::make()
+                ->title('Aucune prestation éligible dans le panier.')
+                ->body("Cette offre s'applique uniquement à : {$eligibleNames}")
+                ->warning()
+                ->send();
+        }
+
         if ($promotion->type === 'percentage') {
             $this->discountType = 'percentage';
             $this->discountValue = (float) $promotion->value;
@@ -286,11 +307,10 @@ class Pos extends Page
             $this->discountType = 'fixed';
             $this->discountValue = (float) $promotion->value;
         } elseif ($promotion->type === 'free_service') {
-            $eligibleServiceIds = $promotion->services->pluck('id')->toArray();
             $discount = 0;
             foreach ($this->cart as $item) {
                 if ($item['type'] === 'service') {
-                    if (empty($eligibleServiceIds) || in_array($item['itemId'], $eligibleServiceIds)) {
+                    if (empty($eligibleServiceIds) || in_array((int) $item['itemId'], $eligibleServiceIds, true)) {
                         $discount = max($discount, (float) $item['unitPrice']);
                     }
                 }
@@ -301,9 +321,13 @@ class Pos extends Page
 
         $this->saveCartToSession();
 
+        $targetText = ! empty($eligibleServiceIds)
+            ? ' (sur : '.$promotion->services->pluck('name')->implode(', ').')'
+            : ' (sur toutes les prestations)';
+
         Notification::make()
             ->title("Promotion « {$promotion->name} » appliquée !")
-            ->body("Remise : {$promotion->formatted_value}")
+            ->body("Remise : {$promotion->formatted_value}{$targetText}")
             ->success()
             ->send();
     }
@@ -607,11 +631,13 @@ class Pos extends Page
             if ($this->selectedPromotionId) {
                 $appliedPromo = Promotion::find($this->selectedPromotionId);
                 if ($appliedPromo) {
-                    PromotionUsage::create([
-                        'promotionId' => $appliedPromo->id,
-                        'clientId' => $sale->clientId,
-                        'saleId' => $sale->id,
-                    ]);
+                    if ($sale->clientId) {
+                        PromotionUsage::create([
+                            'promotionId' => $appliedPromo->id,
+                            'clientId' => $sale->clientId,
+                            'saleId' => $sale->id,
+                        ]);
+                    }
                     $appliedPromo->increment('currentUsages');
                 }
             }
@@ -693,6 +719,15 @@ class Pos extends Page
             ->get();
     }
 
+    public function getSelectedPromotionProperty(): ?Promotion
+    {
+        if (! $this->selectedPromotionId) {
+            return null;
+        }
+
+        return Promotion::with('services')->find($this->selectedPromotionId);
+    }
+
     // ─── Calculations ────────────────────────────────────────────────
 
     public function getSubtotal(): float
@@ -702,10 +737,60 @@ class Pos extends Page
         }, 0);
     }
 
+    public function getEligibleSubtotalForPromotion(Promotion $promotion): float
+    {
+        $eligibleServiceIds = $promotion->services->pluck('id')->toArray();
+
+        return (float) array_reduce($this->cart, function ($carry, $item) use ($eligibleServiceIds) {
+            if ($item['type'] !== 'service') {
+                return $carry;
+            }
+
+            // If specific services defined for promo, only discount those services
+            if (! empty($eligibleServiceIds) && ! in_array((int) $item['itemId'], $eligibleServiceIds, true)) {
+                return $carry;
+            }
+
+            return $carry + ($item['unitPrice'] * $item['quantity']);
+        }, 0);
+    }
+
     public function getDiscountAmount(): float
     {
         $subtotal = $this->getSubtotal();
         $discountVal = is_numeric($this->discountValue) ? (float) $this->discountValue : 0;
+
+        if ($this->selectedPromotionId) {
+            $promotion = Promotion::with('services')->find($this->selectedPromotionId);
+            if ($promotion && $promotion->isActive()) {
+                $eligibleSubtotal = $this->getEligibleSubtotalForPromotion($promotion);
+
+                if ($eligibleSubtotal <= 0) {
+                    return 0;
+                }
+
+                if ($promotion->type === 'percentage') {
+                    return round(($eligibleSubtotal * min(100, max(0, $discountVal))) / 100);
+                }
+
+                if ($promotion->type === 'free_service') {
+                    $eligibleServiceIds = $promotion->services->pluck('id')->toArray();
+                    $freeServicePrice = 0;
+                    foreach ($this->cart as $item) {
+                        if ($item['type'] === 'service') {
+                            if (empty($eligibleServiceIds) || in_array((int) $item['itemId'], $eligibleServiceIds, true)) {
+                                $freeServicePrice = max($freeServicePrice, (float) $item['unitPrice']);
+                            }
+                        }
+                    }
+
+                    return min($eligibleSubtotal, $freeServicePrice);
+                }
+
+                return min($eligibleSubtotal, max(0, round($discountVal)));
+            }
+        }
+
         if ($this->discountType === 'percentage') {
             return round(($subtotal * min(100, max(0, $discountVal))) / 100);
         }

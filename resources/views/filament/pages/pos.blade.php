@@ -579,6 +579,18 @@
                                         @endforeach
                                     </x-filament::input.select>
                                 </x-filament::input.wrapper>
+
+                                @if($selectedPromotion = $this->selectedPromotion)
+                                    <div class="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                                        <span class="font-medium">
+                                            🎯 @if($selectedPromotion->services->count() > 0)
+                                                Remise ciblée uniquement sur : <strong>{{ $selectedPromotion->services->pluck('name')->implode(', ') }}</strong>
+                                            @else
+                                                Remise applicable sur <strong>l'ensemble des prestations</strong>
+                                            @endif
+                                        </span>
+                                    </div>
+                                @endif
                             </div>
 
                             <!-- Remise manuelle / Calculée -->

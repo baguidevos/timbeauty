@@ -314,3 +314,53 @@ it('can remove an applied promotion from POS cart', function () {
         ->assertSet('selectedPromotionId', null)
         ->assertSet('discountValue', 0);
 });
+
+it('only applies promotion discount to the specific assigned services in cart', function () {
+    $this->actingAs($this->admin);
+
+    // Create a second service (5000 FCFA)
+    $serviceB = Service::create([
+        'name' => 'Soin Barbe Deluxe',
+        'price' => 5000,
+        'duration' => 45,
+        'categoryId' => $this->category->id,
+        'status' => 'active',
+    ]);
+
+    // Create a promo of 50% only assigned to $this->service (3500 FCFA)
+    $targetedPromo = Promotion::create([
+        'name' => 'Flash 50% Coupe Homme',
+        'type' => 'percentage',
+        'value' => 50,
+        'status' => 'active',
+    ]);
+    $targetedPromo->services()->attach($this->service->id);
+
+    // Add Service A (3500 FCFA), Service B (5000 FCFA), and Product (2000 FCFA) -> Subtotal = 10500 FCFA
+    $test = Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->call('addToCart', 'service', $serviceB->id)
+        ->call('addToCart', 'product', $this->product->id)
+        ->call('applyPromotion', $targetedPromo->id);
+
+    // Subtotal = 10500, but discount must only be 50% of 3500 = 1750 (NOT 50% of 10500 = 5250)
+    expect($test->instance()->getSubtotal())->toBe(10500.0)
+        ->and($test->instance()->getDiscountAmount())->toBe(1750.0)
+        ->and($test->instance()->getTotal())->toBe(8750.0);
+
+    $test->call('processSale')->assertHasNoErrors();
+
+    $sale = Sale::latest()->first();
+    expect((float) $sale->subtotal)->toBe(10500.0)
+        ->and((float) $sale->discountAmount)->toBe(1750.0)
+        ->and((float) $sale->total)->toBe(8750.0);
+
+    // If cart has only Service B (5000 FCFA), targeted promo on Service A must give 0 FCFA discount
+    $test2 = Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $serviceB->id)
+        ->call('applyPromotion', $targetedPromo->id);
+
+    expect($test2->instance()->getSubtotal())->toBe(5000.0)
+        ->and($test2->instance()->getDiscountAmount())->toBe(0.0)
+        ->and($test2->instance()->getTotal())->toBe(5000.0);
+});
