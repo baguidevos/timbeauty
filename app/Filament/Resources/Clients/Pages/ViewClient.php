@@ -28,6 +28,19 @@ class ViewClient extends ViewRecord
 
     public bool $isEditingNote = false;
 
+    public function getTitle(): string
+    {
+        return "Fiche Client : {$this->record->getFullName()}";
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [
+            ClientResource::getUrl('index') => 'Clients',
+            $this->record->getFullName(),
+        ];
+    }
+
     public function mount(int|string $record): void
     {
         parent::mount($record);
