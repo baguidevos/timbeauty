@@ -40,7 +40,7 @@ class Settings extends Page
 
     public string $default_opening_time = '08:00';
 
-    public string $default_closing_time = '18:00';
+    public string $default_closing_time = '20:00';
 
     // 2. Paramètres de Caisse
     public string $cash_register_mode = 'auto_open';
@@ -87,8 +87,8 @@ class Settings extends Page
         $this->shop_phone = (string) Setting::get('shop_phone', '+228 90 00 00 00');
         $this->shop_address = (string) Setting::get('shop_address', 'Quartier des Affaires, Lomé, Togo');
         $this->currency = (string) Setting::get('currency', 'FCFA');
-        $this->default_opening_time = (string) Setting::get('default_opening_time', '08:00');
-        $this->default_closing_time = (string) Setting::get('default_closing_time', '22:00');
+        $this->default_opening_time = (string) Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00'));
+        $this->default_closing_time = (string) Setting::get('default_closing_time', Setting::get('business_hours_end', '20:00'));
 
         // Caisse
         $this->cash_register_mode = (string) Setting::get('cash_register_mode', 'auto_open');

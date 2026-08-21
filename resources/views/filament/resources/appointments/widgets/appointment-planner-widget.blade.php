@@ -18,9 +18,16 @@
             $periodLabel = "{$monthName} {$currentCarbon->format('Y')}";
         }
 
-        // Determine min and max hour for day view
-        $minH = 8;
-        $maxH = 19;
+        // Determine min and max hour for day view from Settings
+        $defaultOpeningSetting = \App\Models\Setting::get('default_opening_time', \App\Models\Setting::get('business_hours_start', '08:00'));
+        $defaultClosingSetting = \App\Models\Setting::get('default_closing_time', \App\Models\Setting::get('business_hours_end', '20:00'));
+
+        $minH = (int) explode(':', $defaultOpeningSetting)[0];
+        $maxH = (int) explode(':', $defaultClosingSetting)[0];
+        if ($maxH <= $minH) {
+            $maxH = max(20, $minH + 8);
+        }
+
         if ($viewMode === 'day' && count($appointments) > 0) {
             foreach ($appointments as $a) {
                 if ($a['date'] === $currentDate) {

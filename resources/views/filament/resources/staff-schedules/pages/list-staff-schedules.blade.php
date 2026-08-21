@@ -121,7 +121,7 @@
                                                 type="button"
                                                 wire:click="quickSetHours({{ $row['id'] }}, {{ $dayNum }})"
                                                 class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-gray-400 hover:text-amber-600 border border-dashed border-gray-200 dark:border-gray-700 hover:border-amber-400 transition-all"
-                                                title="Définir 09:00 - 19:00"
+                                                title="Définir les horaires standards"
                                             >
                                                 + Définir
                                             </button>

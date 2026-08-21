@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\StaffSchedules\Schemas;
 
 use App\Models\Barber;
+use App\Models\Setting;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
@@ -52,13 +53,13 @@ class StaffScheduleForm
 
                         TimePicker::make('startTime')
                             ->label('Heure de début')
-                            ->default('09:00')
+                            ->default(fn () => Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00')))
                             ->seconds(false)
                             ->required(),
 
                         TimePicker::make('endTime')
                             ->label('Heure de fin')
-                            ->default('19:00')
+                            ->default(fn () => Setting::get('default_closing_time', Setting::get('business_hours_end', '20:00')))
                             ->seconds(false)
                             ->required(),
 

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\StaffSchedules\Pages;
 
 use App\Filament\Resources\StaffSchedules\StaffScheduleResource;
 use App\Models\Barber;
+use App\Models\Setting;
 use App\Models\StaffSchedule;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
@@ -67,6 +68,8 @@ class ListStaffSchedules extends ListRecords
         }
 
         $barbers = $query->get();
+        $defaultStart = (string) Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00'));
+        $defaultEnd = (string) Setting::get('default_closing_time', Setting::get('business_hours_end', '22:00'));
 
         $matrix = [];
         foreach ($barbers as $barber) {
@@ -83,8 +86,8 @@ class ListStaffSchedules extends ListRecords
             foreach ($barber->schedules as $sch) {
                 $days[$sch->dayOfWeek] = [
                     'id' => $sch->id,
-                    'start_time' => $sch->startTime ? substr((string) $sch->startTime, 0, 5) : '09:00',
-                    'end_time' => $sch->endTime ? substr((string) $sch->endTime, 0, 5) : '19:00',
+                    'start_time' => $sch->startTime ? substr((string) $sch->startTime, 0, 5) : $defaultStart,
+                    'end_time' => $sch->endTime ? substr((string) $sch->endTime, 0, 5) : $defaultEnd,
                     'is_day_off' => (bool) $sch->isDayOff,
                 ];
             }
@@ -104,20 +107,23 @@ class ListStaffSchedules extends ListRecords
 
     public function toggleDayOff(int $barberId, int $dayOfWeek): void
     {
+        $defaultStart = (string) Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00'));
+        $defaultEnd = (string) Setting::get('default_closing_time', Setting::get('business_hours_end', '22:00'));
+
         $schedule = StaffSchedule::firstOrNew([
             'barberId' => $barberId,
             'dayOfWeek' => $dayOfWeek,
         ]);
 
         if (! $schedule->exists) {
-            $schedule->startTime = '09:00';
-            $schedule->endTime = '19:00';
+            $schedule->startTime = $defaultStart;
+            $schedule->endTime = $defaultEnd;
             $schedule->isDayOff = false;
         } else {
             $schedule->isDayOff = ! $schedule->isDayOff;
             if (! $schedule->startTime || ! $schedule->endTime) {
-                $schedule->startTime = '09:00';
-                $schedule->endTime = '19:00';
+                $schedule->startTime = $defaultStart;
+                $schedule->endTime = $defaultEnd;
             }
         }
 
@@ -131,17 +137,20 @@ class ListStaffSchedules extends ListRecords
 
     public function quickSetHours(int $barberId, int $dayOfWeek): void
     {
+        $defaultStart = (string) Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00'));
+        $defaultEnd = (string) Setting::get('default_closing_time', Setting::get('business_hours_end', '20:00'));
+
         StaffSchedule::updateOrCreate(
             ['barberId' => $barberId, 'dayOfWeek' => $dayOfWeek],
             [
-                'startTime' => '09:00',
-                'endTime' => '19:00',
+                'startTime' => $defaultStart,
+                'endTime' => $defaultEnd,
                 'isDayOff' => false,
             ]
         );
 
         Notification::make()
-            ->title('Horaire défini : 09:00 - 19:00')
+            ->title("Horaire défini : {$defaultStart} - {$defaultEnd}")
             ->success()
             ->send();
     }
@@ -170,6 +179,9 @@ class ListStaffSchedules extends ListRecords
             0 => 'Dimanche',
         ];
 
+        $defaultStart = (string) Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00'));
+        $defaultEnd = (string) Setting::get('default_closing_time', Setting::get('business_hours_end', '20:00'));
+
         return Action::make('configureWeek')
             ->label('Configurer la semaine')
             ->icon('heroicon-o-calendar-days')
@@ -177,7 +189,7 @@ class ListStaffSchedules extends ListRecords
             ->modalHeading('Configurer les horaires hebdomadaires')
             ->modalDescription('Définissez les heures de travail et jours de repos pour chaque jour de la semaine.')
             ->modalWidth(Width::FourExtraLarge)
-            ->fillForm(function (array $arguments): array {
+            ->fillForm(function (array $arguments) use ($defaultStart, $defaultEnd): array {
                 $barberId = $arguments['barberId'] ?? null;
                 $data = ['barberId' => $barberId];
 
@@ -186,20 +198,20 @@ class ListStaffSchedules extends ListRecords
                     foreach ([1, 2, 3, 4, 5, 6, 0] as $d) {
                         $sch = $schedules->get($d);
                         $data["day_{$d}_is_off"] = $sch ? (bool) $sch->isDayOff : ($d === 0);
-                        $data["day_{$d}_start"] = $sch && $sch->startTime ? substr((string) $sch->startTime, 0, 5) : '09:00';
-                        $data["day_{$d}_end"] = $sch && $sch->endTime ? substr((string) $sch->endTime, 0, 5) : '19:00';
+                        $data["day_{$d}_start"] = $sch && $sch->startTime ? substr((string) $sch->startTime, 0, 5) : $defaultStart;
+                        $data["day_{$d}_end"] = $sch && $sch->endTime ? substr((string) $sch->endTime, 0, 5) : $defaultEnd;
                     }
                 } else {
                     foreach ([1, 2, 3, 4, 5, 6, 0] as $d) {
                         $data["day_{$d}_is_off"] = ($d === 0);
-                        $data["day_{$d}_start"] = '09:00';
-                        $data["day_{$d}_end"] = '19:00';
+                        $data["day_{$d}_start"] = $defaultStart;
+                        $data["day_{$d}_end"] = $defaultEnd;
                     }
                 }
 
                 return $data;
             })
-            ->schema(function () use ($daysConfig): array {
+            ->schema(function () use ($daysConfig, $defaultStart, $defaultEnd): array {
                 $schema = [
                     Select::make('barberId')
                         ->label('Employé')
@@ -222,11 +234,11 @@ class ListStaffSchedules extends ListRecords
                             TimePicker::make("day_{$d}_start")
                                 ->label('Début')
                                 ->seconds(false)
-                                ->default('09:00'),
+                                ->default($defaultStart),
                             TimePicker::make("day_{$d}_end")
                                 ->label('Fin')
                                 ->seconds(false)
-                                ->default('19:00'),
+                                ->default($defaultEnd),
                         ])
                         ->columns(3);
                 }
@@ -235,19 +247,19 @@ class ListStaffSchedules extends ListRecords
 
                 return $schema;
             })
-            ->action(function (array $data): void {
+            ->action(function (array $data) use ($defaultStart, $defaultEnd): void {
                 $barberId = (int) $data['barberId'];
 
                 foreach ([1, 2, 3, 4, 5, 6, 0] as $d) {
                     $isOff = (bool) ($data["day_{$d}_is_off"] ?? false);
-                    $start = $data["day_{$d}_start"] ?? '09:00';
-                    $end = $data["day_{$d}_end"] ?? '19:00';
+                    $start = $data["day_{$d}_start"] ?? $defaultStart;
+                    $end = $data["day_{$d}_end"] ?? $defaultEnd;
 
                     StaffSchedule::updateOrCreate(
                         ['barberId' => $barberId, 'dayOfWeek' => $d],
                         [
-                            'startTime' => $start ?: '09:00',
-                            'endTime' => $end ?: '19:00',
+                            'startTime' => $start ?: $defaultStart,
+                            'endTime' => $end ?: $defaultEnd,
                             'isDayOff' => $isOff,
                         ]
                     );

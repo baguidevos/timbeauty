@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Barbers\RelationManagers;
 
+use App\Models\Setting;
 use App\Models\StaffSchedule;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -44,12 +45,12 @@ class SchedulesRelationManager extends RelationManager
                 TimePicker::make('startTime')
                     ->label('Heure de début')
                     ->seconds(false)
-                    ->default('09:00'),
+                    ->default(fn () => Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00'))),
 
                 TimePicker::make('endTime')
                     ->label('Heure de fin')
                     ->seconds(false)
-                    ->default('19:00'),
+                    ->default(fn () => Setting::get('default_closing_time', Setting::get('business_hours_end', '20:00'))),
 
                 Checkbox::make('isDayOff')
                     ->label('Jour de repos')
@@ -59,6 +60,9 @@ class SchedulesRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        $defaultStart = (string) Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00'));
+        $defaultEnd = (string) Setting::get('default_closing_time', Setting::get('business_hours_end', '20:00'));
+
         return $table
             ->recordTitleAttribute('dayOfWeek')
             ->columns([
@@ -79,11 +83,11 @@ class SchedulesRelationManager extends RelationManager
             ])
             ->headerActions([
                 Action::make('generateStandardWeek')
-                    ->label('Générer la semaine standard (Lun-Sam 9h-19h)')
+                    ->label("Générer la semaine standard (Lun-Sam {$defaultStart}-{$defaultEnd})")
                     ->icon('heroicon-o-sparkles')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->action(function (): void {
+                    ->action(function () use ($defaultStart, $defaultEnd): void {
                         $barber = $this->getOwnerRecord();
 
                         foreach ([1, 2, 3, 4, 5, 6, 0] as $d) {
@@ -91,8 +95,8 @@ class SchedulesRelationManager extends RelationManager
                             StaffSchedule::updateOrCreate(
                                 ['barberId' => $barber->id, 'dayOfWeek' => $d],
                                 [
-                                    'startTime' => '09:00',
-                                    'endTime' => '19:00',
+                                    'startTime' => $defaultStart,
+                                    'endTime' => $defaultEnd,
                                     'isDayOff' => $isOff,
                                 ]
                             );

@@ -3,7 +3,9 @@
 namespace App\Filament\Resources\StaffAttendances\Widgets;
 
 use App\Models\Barber;
+use App\Models\Setting;
 use App\Models\StaffAttendance;
+use App\Models\StaffSchedule;
 use Carbon\Carbon;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
@@ -109,7 +111,19 @@ class StaffAttendanceWidget extends Widget
         $barber = Barber::findOrFail($barberId);
 
         $now = now();
-        $isLate = $now->format('H:i') > '09:00';
+        $todayDayOfWeek = Carbon::today()->dayOfWeek;
+
+        $schedule = StaffSchedule::where('barberId', $barberId)
+            ->where('dayOfWeek', $todayDayOfWeek)
+            ->first();
+
+        if ($schedule && ! $schedule->isDayOff && $schedule->startTime) {
+            $expectedStartTime = substr((string) $schedule->startTime, 0, 5);
+        } else {
+            $expectedStartTime = (string) Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00'));
+        }
+
+        $isLate = $now->format('H:i') > $expectedStartTime;
 
         StaffAttendance::updateOrCreate(
             ['barberId' => $barberId, 'date' => $today],
