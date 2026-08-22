@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Payroll extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'barberId',
@@ -69,5 +70,19 @@ class Payroll extends Model
     public function getRemainingAmountAttribute(): float
     {
         return max(0, (float) $this->netSalary - $this->total_paid);
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        $barberName = $this->barber ? $this->barber->getFullName() : "Employé #{$this->barberId}";
+        $net = number_format((float) $this->netSalary, 0, ',', ' ');
+        $period = sprintf('%02d/%d', $this->month, $this->year);
+
+        return match ($action) {
+            'create' => "Fiche de paie générée pour {$barberName} ({$period}) - Net : {$net} FCFA",
+            'update' => "Mise à jour de la fiche de paie #{$this->id} ({$barberName}) - Statut : {$this->status}",
+            'delete' => "Suppression de la fiche de paie #{$this->id} ({$barberName})",
+            default => "Action {$action} sur la fiche de paie #{$this->id}",
+        };
     }
 }

@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Helpers\FormatHelper;
+use App\Traits\LogsActivity;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Promotion extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -121,5 +122,15 @@ class Promotion extends Model
     public function isActive(): bool
     {
         return $this->dynamic_status === 'active';
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        return match ($action) {
+            'create' => "Nouvelle promotion créée : {$this->name} ({$this->formatted_value})",
+            'update' => "Mise à jour de la promotion : {$this->name} - Statut : {$this->dynamic_status_label}",
+            'delete' => "Suppression de la promotion : {$this->name}",
+            default => "Action {$action} sur la promotion {$this->name}",
+        };
     }
 }

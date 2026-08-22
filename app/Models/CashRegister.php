@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 class CashRegister extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'openingAmount',
@@ -163,5 +164,20 @@ class CashRegister extends Model
                 $register->attachOrphanedOperations();
             }
         });
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        $opening = number_format((float) $this->openingAmount, 0, ',', ' ');
+        $closing = number_format((float) $this->closingAmount, 0, ',', ' ');
+
+        return match ($action) {
+            'create' => "Ouverture de session de caisse #{$this->id} avec un fond de {$opening} FCFA",
+            'update' => $this->status === 'closed'
+                ? "Clôture de la caisse #{$this->id} avec un montant final de {$closing} FCFA"
+                : "Mise à jour de la caisse #{$this->id} ({$this->status})",
+            'delete' => "Suppression de la session de caisse #{$this->id}",
+            default => "Action {$action} sur la session de caisse #{$this->id}",
+        };
     }
 }

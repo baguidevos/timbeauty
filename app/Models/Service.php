@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Service extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -47,5 +48,17 @@ class Service extends Model
     public function loyaltyRules()
     {
         return $this->hasMany(LoyaltyRule::class, 'serviceId');
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        $price = number_format((float) $this->price, 0, ',', ' ');
+
+        return match ($action) {
+            'create' => "Nouvelle prestation ajoutée au catalogue : {$this->name} ({$price} FCFA)",
+            'update' => "Mise à jour de la prestation : {$this->name} ({$price} FCFA)",
+            'delete' => "Suppression de la prestation : {$this->name}",
+            default => "Action {$action} sur la prestation {$this->name}",
+        };
     }
 }

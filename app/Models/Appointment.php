@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Guava\Calendar\Contracts\Eventable;
 use Guava\Calendar\ValueObjects\CalendarEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,7 +11,7 @@ use Illuminate\Support\Carbon;
 
 class Appointment extends Model implements Eventable
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'clientId',
@@ -118,5 +119,18 @@ class Appointment extends Model implements Eventable
     public function isPaid(): bool
     {
         return $this->sales()->where('status', 'completed')->exists();
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        $clientName = $this->client ? "{$this->client->firstName} {$this->client->lastName}" : "Client #{$this->clientId}";
+        $serviceName = $this->service?->name ?? "Service #{$this->serviceId}";
+
+        return match ($action) {
+            'create' => "Prise de rendez-vous pour {$clientName} ({$serviceName})",
+            'update' => "Mise à jour du rendez-vous #{$this->id} ({$clientName}) - Statut : {$this->status}",
+            'delete' => "Suppression du rendez-vous #{$this->id} ({$clientName})",
+            default => "Action {$action} sur rendez-vous #{$this->id}",
+        };
     }
 }

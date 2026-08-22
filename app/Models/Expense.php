@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Expense extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'categoryId',
@@ -67,5 +68,18 @@ class Expense extends Model
                 ]);
             }
         });
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        $amount = number_format((float) $this->amount, 0, ',', ' ');
+        $beneficiary = $this->beneficiary ? " pour {$this->beneficiary}" : '';
+
+        return match ($action) {
+            'create' => "Nouvelle dépense enregistrée de {$amount} FCFA{$beneficiary}",
+            'update' => "Modification de la dépense #{$this->id} ({$amount} FCFA)",
+            'delete' => "Suppression de la dépense #{$this->id} ({$amount} FCFA)",
+            default => "Action {$action} sur la dépense #{$this->id}",
+        };
     }
 }

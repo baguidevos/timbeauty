@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Guava\Calendar\Contracts\Resourceable;
 use Guava\Calendar\ValueObjects\CalendarResource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Barber extends Model implements Resourceable
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'firstName',
@@ -119,5 +120,17 @@ class Barber extends Model implements Resourceable
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        $name = $this->getFullName();
+
+        return match ($action) {
+            'create' => "Nouvel employé/coiffeur ajouté : {$name} ({$this->jobTitle})",
+            'update' => "Mise à jour du profil employé : {$name}",
+            'delete' => "Suppression de l'employé : {$name}",
+            default => "Action {$action} sur l'employé {$name}",
+        };
     }
 }

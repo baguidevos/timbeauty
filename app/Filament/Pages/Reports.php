@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use Filament\Pages\Page;
+use Override;
 
 class Reports extends Page
 {
@@ -17,4 +18,10 @@ class Reports extends Page
     protected string $view = 'filament.pages.reports';
 
     protected static ?string $title = 'Rapports';
+
+    #[Override]
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 }

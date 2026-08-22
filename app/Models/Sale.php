@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Sale extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'clientId',
@@ -100,5 +101,17 @@ class Sale extends Model
                 ]);
             }
         });
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        $amount = number_format((float) $this->total, 0, ',', ' ');
+
+        return match ($action) {
+            'create' => "Nouvelle vente #{$this->id} enregistrée pour {$amount} FCFA ({$this->paymentMethod})",
+            'update' => "Mise à jour de la vente #{$this->id} - Statut : {$this->status}",
+            'delete' => "Annulation / suppression de la vente #{$this->id}",
+            default => "Action {$action} sur la vente #{$this->id}",
+        };
     }
 }

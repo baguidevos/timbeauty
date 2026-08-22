@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -68,5 +69,15 @@ class Product extends Model
     public function scopeOutOfStock($query)
     {
         return $query->where('stockQuantity', '<=', 0);
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        return match ($action) {
+            'create' => "Nouveau produit ajouté au stock : {$this->name} (Qté : {$this->stockQuantity})",
+            'update' => "Mise à jour du produit : {$this->name} (Stock actuel : {$this->stockQuantity})",
+            'delete' => "Suppression du produit : {$this->name}",
+            default => "Action {$action} sur le produit {$this->name}",
+        };
     }
 }

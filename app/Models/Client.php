@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Client extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'firstName',
@@ -93,5 +94,17 @@ class Client extends Model
                 $client->firstVisitDate = now()->toDateString();
             }
         });
+    }
+
+    public function getActivityDescription(string $action): string
+    {
+        $name = $this->getFullName();
+
+        return match ($action) {
+            'create' => "Nouveau client enregistré : {$name}",
+            'update' => "Mise à jour du profil client : {$name}",
+            'delete' => "Suppression du client : {$name}",
+            default => "Action {$action} sur le client {$name}",
+        };
     }
 }

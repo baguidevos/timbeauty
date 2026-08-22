@@ -8,6 +8,7 @@ use App\Models\AppointmentPhoto;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Override;
 
 class AppointmentPhotoResource extends Resource
 {
@@ -22,6 +23,12 @@ class AppointmentPhotoResource extends Resource
     protected static ?string $modelLabel = 'Photo de rendez-vous';
 
     protected static ?string $pluralModelLabel = 'Photos de rendez-vous';
+
+    #[Override]
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 
     public static function form(Schema $schema): Schema
     {
