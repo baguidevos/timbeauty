@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Suppliers\Tables;
 
+use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Helpers\FormatHelper;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -75,9 +76,10 @@ class SuppliersTable
                         'inactive' => 'Inactif',
                     ]),
             ])
+            ->recordUrl(fn ($record) => SupplierResource::getUrl('view', ['record' => $record]))
             ->recordActions([
                 ViewAction::make()
-                    ->slideOver(),
+                    ->url(fn ($record) => SupplierResource::getUrl('view', ['record' => $record])),
                 EditAction::make()
                     ->slideOver(),
             ])

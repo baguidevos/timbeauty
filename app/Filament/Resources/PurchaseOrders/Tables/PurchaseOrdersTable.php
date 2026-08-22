@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseOrders\Tables;
 
+use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Helpers\FormatHelper;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -81,9 +82,10 @@ class PurchaseOrdersTable
                     ->label('Fournisseur')
                     ->relationship('supplier', 'name'),
             ])
+            ->recordUrl(fn ($record) => PurchaseOrderResource::getUrl('view', ['record' => $record]))
             ->recordActions([
                 ViewAction::make()
-                    ->slideOver(),
+                    ->url(fn ($record) => PurchaseOrderResource::getUrl('view', ['record' => $record])),
                 EditAction::make()
                     ->slideOver(),
             ])
