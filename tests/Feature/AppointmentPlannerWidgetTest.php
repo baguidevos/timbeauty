@@ -3,6 +3,7 @@
 use App\Filament\Resources\Appointments\Pages\ListAppointments;
 use App\Filament\Resources\Appointments\Widgets\AppointmentCalendarWidget;
 use App\Filament\Resources\Appointments\Widgets\AppointmentPlannerWidget;
+use App\Filament\Widgets\NextAppointmentWidget;
 use App\Models\Appointment;
 use App\Models\Barber;
 use App\Models\Client;
@@ -161,4 +162,26 @@ it('can render appointment calendar widget', function () {
 
     Livewire::test(AppointmentCalendarWidget::class)
         ->assertSuccessful();
+});
+
+it('renders next appointment widget with upcoming or pending appointment', function () {
+    $this->actingAs($this->admin);
+
+    $today = Carbon::today()->toDateString();
+
+    Appointment::create([
+        'clientId' => $this->client->id,
+        'barberId' => $this->barber->id,
+        'serviceId' => $this->service->id,
+        'date' => $today,
+        'startTime' => '09:00',
+        'endTime' => '09:45',
+        'status' => 'pending',
+    ]);
+
+    Livewire::test(NextAppointmentWidget::class)
+        ->assertSuccessful()
+        ->assertSee('Afi Client')
+        ->assertSee('Coupe & Barbe')
+        ->assertSee('Kodjo Barber');
 });

@@ -16,7 +16,7 @@ class DashboardStats extends BaseWidget
         $today = now()->toDateString();
 
         $todayAppointments = Appointment::where('date', $today)->count();
-        $todaySales = Sale::whereDate('created_at', $today)->sum('total');
+        $todaySales = Sale::where('status', 'completed')->whereDate('created_at', $today)->sum('total');
         $activeClients = Client::count();
         $pendingAppointments = Appointment::where('status', 'pending')->count();
 

@@ -26,13 +26,13 @@
                 <div class="flex items-center gap-4 shrink-0">
                     <div class="flex flex-col items-center justify-center rounded-xl px-4 py-2.5 {{ $badgeBg }} shadow-sm min-w-[90px]">
                         <span class="text-[9px] font-bold uppercase tracking-wider opacity-80">
-                            {{ $isPast ? 'Passé' : 'Prochain RDV' }}
+                            {{ $appointment['status'] === 'in_progress' ? 'En cours' : ($isPast ? 'En retard' : 'Prochain RDV') }}
                         </span>
                         <span class="text-base font-bold tabular-nums leading-tight mt-0.5">
                             {{ $countdownText }}
                         </span>
                         <span class="text-[10px] opacity-80 tabular-nums mt-0.5">
-                            {{ \App\Helpers\FormatHelper::formatTime($appointment['start_time']) }}
+                            {{ $appointment['date_badge'] !== 'Aujourd\'hui' ? $appointment['date_badge'] . ' à ' : '' }}{{ $appointment['formatted_time'] }}
                         </span>
                     </div>
                 </div>
@@ -44,8 +44,8 @@
                         <span class="text-sm font-semibold text-gray-900 dark:text-white truncate">
                             {{ $appointment['client_name'] }}
                         </span>
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border {{ $appointment['status'] === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300' }}">
-                            {{ $appointment['status'] === 'confirmed' ? 'Confirmé' : 'En attente' }}
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border {{ $appointment['status'] === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300' : ($appointment['status'] === 'in_progress' ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300') }}">
+                            {{ match ($appointment['status']) { 'confirmed' => 'Confirmé', 'in_progress' => 'En cours', default => 'En attente' } }}
                         </span>
                     </div>
                     <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">

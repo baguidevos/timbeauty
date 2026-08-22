@@ -22,17 +22,16 @@ class LowStockWidget extends Widget
 
     public function loadLowStock(): void
     {
-        $products = Product::where('status', 'active')
-            ->get()
-            ->filter(fn ($p) => $p->stock_quantity <= $p->min_stock_level)
-            ->take(5);
+        $allLowStock = Product::where('status', 'active')
+            ->lowStock()
+            ->get();
 
-        $this->lowStockCount = $products->count();
-        $this->lowStockProducts = $products->map(fn ($p) => [
+        $this->lowStockCount = $allLowStock->count();
+        $this->lowStockProducts = $allLowStock->take(5)->map(fn ($p) => [
             'id' => $p->id,
             'name' => $p->name,
-            'stock_quantity' => $p->stock_quantity,
-            'min_stock_level' => $p->min_stock_level,
+            'stock_quantity' => $p->stockQuantity,
+            'min_stock_level' => $p->minStockLevel,
         ])->values()->toArray();
     }
 }

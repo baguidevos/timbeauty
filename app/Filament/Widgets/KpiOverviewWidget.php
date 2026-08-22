@@ -88,16 +88,16 @@ class KpiOverviewWidget extends Widget
             ->where('year', $now->year)
             ->first();
 
-        if ($targetModel && $targetModel->target_amount > 0) {
-            $this->monthlyGoal = (float) $targetModel->target_amount;
+        if ($targetModel && $targetModel->targetAmount > 0) {
+            $this->monthlyGoal = (float) $targetModel->targetAmount;
         }
 
         // 2. Clients
         $this->totalClients = Client::count();
 
-        $this->newClientsThisMonth = Client::where('first_visit_date', '>=', $monthStart)->count();
+        $this->newClientsThisMonth = Client::where('firstVisitDate', '>=', $monthStart)->count();
 
-        $this->prevMonthClients = Client::whereBetween('first_visit_date', [$prevMonthStart, $prevMonthEnd])->count();
+        $this->prevMonthClients = Client::whereBetween('firstVisitDate', [$prevMonthStart, $prevMonthEnd])->count();
 
         // 3. Appointments
         $this->todayAppointments = Appointment::whereDate('date', $today)->count();
@@ -113,7 +113,7 @@ class KpiOverviewWidget extends Widget
             $transactions = $openRegister->transactions;
             $totalIn = $transactions->whereIn('type', ['sale', 'deposit'])->sum('amount');
             $totalOut = $transactions->whereIn('type', ['expense', 'withdrawal'])->sum('amount');
-            $this->cashBalance = (float) ($openRegister->opening_amount + $totalIn - $totalOut);
+            $this->cashBalance = (float) ($openRegister->openingAmount + $totalIn - $totalOut);
         } else {
             $this->cashRegisterOpen = false;
             $this->cashBalance = 0;

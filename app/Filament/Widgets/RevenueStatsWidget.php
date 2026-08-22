@@ -18,11 +18,11 @@ class RevenueStatsWidget extends BaseWidget
         $today = now()->toDateString();
         $monthStart = now()->startOfMonth()->toDateString();
 
-        $todayRevenue = Sale::whereDate('created_at', $today)->sum('total');
-        $monthlyRevenue = Sale::whereDate('created_at', '>=', $monthStart)->sum('total');
+        $todayRevenue = Sale::where('status', 'completed')->whereDate('created_at', $today)->sum('total');
+        $monthlyRevenue = Sale::where('status', 'completed')->whereDate('created_at', '>=', $monthStart)->sum('total');
         $todayAppointments = Appointment::where('date', $today)->count();
         $totalClients = Client::count();
-        $newClientsThisMonth = Client::whereDate('created_at', '>=', $monthStart)->count();
+        $newClientsThisMonth = Client::whereDate('firstVisitDate', '>=', $monthStart)->count();
 
         return [
             Stat::make('Revenu du jour', FormatHelper::formatFCFA($todayRevenue))
@@ -48,7 +48,8 @@ class RevenueStatsWidget extends BaseWidget
 
     private function getTodayChart(): array
     {
-        return Sale::whereDate('created_at', now()->toDateString())
+        return Sale::where('status', 'completed')
+            ->whereDate('created_at', now()->toDateString())
             ->selectRaw("strftime('%H', created_at) as hour, SUM(total) as total")
             ->groupByRaw("strftime('%H', created_at)")
             ->orderBy('hour')
@@ -62,7 +63,7 @@ class RevenueStatsWidget extends BaseWidget
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->toDateString();
-            $data[] = (float) Sale::whereDate('created_at', $date)->sum('total');
+            $data[] = (float) Sale::where('status', 'completed')->whereDate('created_at', $date)->sum('total');
         }
 
         return $data;

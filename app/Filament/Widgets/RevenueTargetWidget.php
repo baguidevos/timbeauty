@@ -44,9 +44,9 @@ class RevenueTargetWidget extends Widget
             ->where('year', $now->year)
             ->first();
 
-        if ($targetModel && $targetModel->target_amount > 0) {
+        if ($targetModel && $targetModel->targetAmount > 0) {
             $this->hasTarget = true;
-            $this->targetAmount = (float) $targetModel->target_amount;
+            $this->targetAmount = (float) $targetModel->targetAmount;
         } else {
             $this->hasTarget = false;
             $this->targetAmount = 1000000;

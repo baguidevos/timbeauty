@@ -40,7 +40,7 @@ class RecentExpensesWidget extends Widget
                 'id' => $e->id,
                 'amount' => (float) $e->amount,
                 'description' => $e->description ?: ($e->category?->name ?? 'Dépense'),
-                'payment_method' => $paymentMethods[$e->payment_method] ?? $e->payment_method,
+                'payment_method' => $paymentMethods[$e->paymentMethod] ?? $e->paymentMethod,
                 'date' => FormatHelper::formatDate($e->date),
             ];
         })->toArray();

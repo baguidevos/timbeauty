@@ -23,7 +23,9 @@ class RevenueChartWidget extends ChartWidget
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
             $labels[] = $date->isoFormat('ddd dd/MM');
-            $data[] = (float) Sale::whereDate('created_at', $date->toDateString())->sum('total');
+            $data[] = (float) Sale::where('status', 'completed')
+                ->whereDate('created_at', $date->toDateString())
+                ->sum('total');
         }
 
         return [

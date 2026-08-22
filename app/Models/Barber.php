@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\LogsActivity;
 use Guava\Calendar\Contracts\Resourceable;
 use Guava\Calendar\ValueObjects\CalendarResource;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -91,9 +92,16 @@ class Barber extends Model implements Resourceable
         return $this->hasMany(RevenueTarget::class, 'barberId');
     }
 
+    protected function fullName(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): string => trim("{$this->firstName} {$this->lastName}"),
+        );
+    }
+
     public function getFullName(): string
     {
-        return $this->firstName.' '.$this->lastName;
+        return trim("{$this->firstName} {$this->lastName}");
     }
 
     public function toCalendarResource(): CalendarResource
