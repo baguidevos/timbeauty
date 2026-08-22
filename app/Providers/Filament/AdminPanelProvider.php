@@ -55,6 +55,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(fn () => view('filament.components.brand-logo', ['isDark' => false]))
             ->darkModeBrandLogo(fn () => view('filament.components.brand-logo', ['isDark' => true]))
             ->brandLogoHeight('2.75rem')
+            ->favicon(asset('favicon/favicon.ico'))
             ->discoverClusters(in: app_path('Filament/Clusters'), for: 'App\Filament\Clusters')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
 
