@@ -69,6 +69,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->collapsibleNavigationGroups()
             ->globalSearchDebounce('500ms')
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->widgets([
                 // RevenueStatsWidget::class,
                 // PendingAppointmentsWidget::class,

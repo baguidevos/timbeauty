@@ -8,6 +8,8 @@ use App\Models\Client;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class ClientResource extends Resource
 {
@@ -22,6 +24,49 @@ class ClientResource extends Resource
     protected static ?string $modelLabel = 'Client';
 
     protected static ?string $pluralModelLabel = 'Clients';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['firstName', 'lastName', 'phone', 'whatsapp', 'email', 'address'];
+    }
+
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        /** @var Client $record */
+        return $record->getFullName();
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        /** @var Client $record */
+        $details = [];
+
+        if ($record->phone) {
+            $details['Téléphone'] = $record->phone;
+        }
+
+        if ($record->email) {
+            $details['Email'] = $record->email;
+        }
+
+        $details['Visites'] = "{$record->totalVisits} visite(s)";
+
+        if ($record->isLoyal) {
+            $details['Fidélité'] = '⭐ Client Fidèle';
+        }
+
+        return $details;
+    }
+
+    public static function getGlobalSearchResultUrl(Model $record): string
+    {
+        return ClientResource::getUrl('view', ['record' => $record]);
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['loyaltyTier']);
+    }
 
     public static function form(Schema $schema): Schema
     {
