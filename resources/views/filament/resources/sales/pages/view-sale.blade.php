@@ -327,6 +327,10 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
                         @foreach($items as $item)
+                            @php
+                                $service = $item->type === 'service' ? $this->getServiceForItem($item) : null;
+                                $isPromoted = $this->isItemEligibleForSalePromotion($item, $promotion);
+                            @endphp
                             <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition">
                                 <td class="p-3.5">
                                     @if($item->type === 'service')
@@ -342,7 +346,23 @@
                                     @endif
                                 </td>
                                 <td class="p-3.5">
-                                    <p class="font-bold text-gray-900 dark:text-white">{{ $item->name }}</p>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <p class="font-bold text-gray-900 dark:text-white">{{ $item->name }}</p>
+                                        @if($service && $service->category)
+                                            <span class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                                {{ $service->category->name }}
+                                            </span>
+                                        @endif
+                                        @if($isPromoted && $promotion)
+                                            <span 
+                                                title="Catégorie éligible à la promotion {{ $promotion->name }}" 
+                                                class="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white px-2 py-0.5 text-[10px] font-black shadow-xs"
+                                            >
+                                                <x-heroicon-m-tag class="h-2.5 w-2.5 stroke-[2.5]" />
+                                                Promo {{ $promotion->formatted_value }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="p-3.5 text-right text-gray-600 dark:text-gray-300 font-semibold">
                                     {{ \App\Helpers\FormatHelper::formatFCFA($item->unitPrice) }}

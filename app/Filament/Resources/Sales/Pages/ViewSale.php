@@ -7,6 +7,8 @@ use App\Helpers\FormatHelper;
 use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\Service;
 use App\Models\StockMovement;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -157,6 +159,39 @@ class ViewSale extends ViewRecord
 
     public function getAppliedPromotion(): ?Promotion
     {
-        return $this->record->promotion ?? $this->record->promotionUsages()->with('promotion')->first()?->promotion;
+        $promo = $this->record->promotion ?? $this->record->promotionUsages()->with('promotion')->first()?->promotion;
+        if ($promo) {
+            $promo->loadMissing('categories');
+        }
+
+        return $promo;
+    }
+
+    public function getServiceForItem(SaleItem $item): ?Service
+    {
+        if ($item->type !== 'service' || ! $item->itemId) {
+            return null;
+        }
+
+        return Service::with('category')->find($item->itemId);
+    }
+
+    public function isItemEligibleForSalePromotion(SaleItem $item, ?Promotion $promotion): bool
+    {
+        if (! $promotion || $item->type !== 'service' || ! $item->itemId) {
+            return false;
+        }
+
+        // Global promo applies to all services
+        if ($promotion->categories->isEmpty()) {
+            return true;
+        }
+
+        $service = $this->getServiceForItem($item);
+        if (! $service || ! $service->categoryId) {
+            return false;
+        }
+
+        return $promotion->categories->pluck('id')->contains($service->categoryId);
     }
 }

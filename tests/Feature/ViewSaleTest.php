@@ -9,7 +9,6 @@ use App\Models\LoyaltyTier;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Promotion;
-use App\Models\PromotionUsage;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Service;
@@ -110,6 +109,7 @@ beforeEach(function () {
         'barberId' => $this->barber->id,
         'appointmentId' => $this->appointment->id,
         'cashRegisterId' => $this->cashRegister->id,
+        'promotionId' => $this->promo->id,
         'subtotal' => 7500,
         'discountAmount' => 1500,
         'total' => 6000,
@@ -141,11 +141,7 @@ beforeEach(function () {
         'total' => 3500,
     ]);
 
-    PromotionUsage::create([
-        'promotionId' => $this->promo->id,
-        'clientId' => $this->client->id,
-        'saleId' => $this->sale->id,
-    ]);
+    $this->promo->categories()->attach($this->serviceCategory->id);
 });
 
 it('can render enhanced sale detail view with full breakdown and actors', function () {
@@ -160,6 +156,8 @@ it('can render enhanced sale detail view with full breakdown and actors', functi
         ->assertSee('Marc Koffi')
         ->assertSee('Admin Test')
         ->assertSee('Coupe & Dégradé Laser')
+        ->assertSee('Coiffure Homme')
+        ->assertSee('Promo -1 500 FCFA')
         ->assertSee('Cire Mate 100ml')
         ->assertSee('7 500 FCFA')
         ->assertSee('6 000 FCFA')
