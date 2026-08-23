@@ -6,8 +6,12 @@ use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Models\StockMovement;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Section as FormSection;
+use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Support\Collection;
 
 class ViewPurchaseOrder extends ViewRecord
@@ -52,52 +56,115 @@ class ViewPurchaseOrder extends ViewRecord
                 });
         }
 
-        // 2. Receive Order & Update Stock (if pending or ordered)
-        if (in_array($order->status, ['pending', 'ordered'])) {
+        // 2. Receive Order & Update Stock (if pending, ordered or partially_received)
+        if (in_array($order->status, ['pending', 'ordered', 'partially_received'])) {
             $actions[] = Action::make('receiveOrder')
-                ->label('Valider la Réception du Stock')
+                ->label(fn () => $this->record->status === 'partially_received' ? 'Compléter la Réception' : 'Valider la Réception du Stock')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
-                ->requiresConfirmation()
-                ->modalHeading('Réceptionner la commande')
-                ->modalDescription('Cette action va marquer la commande comme "Reçue", mettre à jour le stock physique de chaque produit et enregistrer les mouvements d\'entrée de stock.')
-                ->action(function (): void {
+                ->modalHeading('Réceptionner les articles commandés')
+                ->modalDescription('Indiquez si la livraison est 100% conforme ou saisissez les quantités réelles reçues par article.')
+                ->form(function () {
                     $order = $this->record;
+                    $schema = [];
+
+                    $schema[] = Toggle::make('is_conforming')
+                        ->label('✅ Livraison 100% conforme (Quantités reçues = Quantités commandées)')
+                        ->helperText('Laissez activé si tous les articles commandés sont livrés en intégralité.')
+                        ->default(true)
+                        ->live();
+
+                    $itemInputs = [];
+                    foreach ($order->items as $item) {
+                        $productName = $item->productName ?: ($item->product?->name ?? 'Article');
+                        $itemInputs[] = TextInput::make("received_items.{$item->id}")
+                            ->label("{$productName}")
+                            ->helperText("Commandé : {$item->quantity} | Déjà reçu : {$item->receivedQuantity}")
+                            ->numeric()
+                            ->default($item->quantity)
+                            ->minValue(0)
+                            ->maxValue($item->quantity)
+                            ->required();
+                    }
+
+                    $schema[] = FormSection::make('Quantités réellement reçues par article')
+                        ->description('Ajustez les quantités pour chaque produit en cas d\'écart ou de colis incomplet.')
+                        ->schema($itemInputs)
+                        ->columns(1)
+                        ->visible(fn (Get $get) => ! $get('is_conforming'));
+
+                    return $schema;
+                })
+                ->action(function (array $data): void {
+                    $order = $this->record;
+                    $isConforming = (bool) ($data['is_conforming'] ?? true);
+                    $allFullyReceived = true;
+                    $anyReceived = false;
 
                     foreach ($order->items as $item) {
-                        $item->update([
-                            'receivedQuantity' => $item->quantity,
-                        ]);
+                        $prevReceived = (int) ($item->receivedQuantity ?? 0);
 
-                        if ($item->product) {
-                            $product = $item->product;
-                            $product->increment('stockQuantity', (int) $item->quantity);
+                        if ($isConforming) {
+                            $newReceived = (int) $item->quantity;
+                        } else {
+                            $newReceived = isset($data['received_items'][$item->id])
+                                ? (int) $data['received_items'][$item->id]
+                                : (int) $item->quantity;
+                        }
+
+                        $delta = max(0, $newReceived - $prevReceived);
+
+                        if ($delta > 0 && $item->product) {
+                            $item->product->increment('stockQuantity', $delta);
 
                             StockMovement::create([
-                                'productId' => $product->id,
+                                'productId' => $item->product->id,
                                 'type' => 'in',
-                                'quantity' => (int) $item->quantity,
+                                'quantity' => $delta,
                                 'reason' => 'purchase',
                                 'reference' => $order->reference,
                             ]);
                         }
+
+                        $item->update([
+                            'receivedQuantity' => $newReceived,
+                        ]);
+
+                        if ($newReceived < $item->quantity) {
+                            $allFullyReceived = false;
+                        }
+                        if ($newReceived > 0) {
+                            $anyReceived = true;
+                        }
                     }
 
+                    $newStatus = $allFullyReceived ? 'received' : ($anyReceived ? 'partially_received' : $order->status);
+
                     $order->update([
-                        'status' => 'received',
+                        'status' => $newStatus,
                         'receivedDate' => now(),
                     ]);
 
-                    Notification::make()
-                        ->title('Commande réceptionnée avec succès')
-                        ->body('Les stocks de tous les articles ont été automatiquement incrémentés.')
-                        ->success()
-                        ->send();
+                    $this->record = $order->fresh(['items.product', 'supplier', 'creator']);
+
+                    if ($allFullyReceived) {
+                        Notification::make()
+                            ->title('Commande entièrement réceptionnée')
+                            ->body('Tous les stocks physiques ont été incrémentés à 100%.')
+                            ->success()
+                            ->send();
+                    } else {
+                        Notification::make()
+                            ->title('Réception partielle enregistrée')
+                            ->body('Les stocks ont été mis à jour selon les quantités effectivement reçues.')
+                            ->warning()
+                            ->send();
+                    }
                 });
         }
 
         // 3. Cancel Order (if not already cancelled/received)
-        if (in_array($order->status, ['pending', 'ordered'])) {
+        if (in_array($order->status, ['pending', 'ordered', 'partially_received'])) {
             $actions[] = Action::make('cancelOrder')
                 ->label('Annuler la commande')
                 ->icon('heroicon-o-x-circle')
@@ -115,7 +182,7 @@ class ViewPurchaseOrder extends ViewRecord
         }
 
         // 4. Edit Order
-        if ($order->status !== 'received') {
+        if (! in_array($order->status, ['received'])) {
             $actions[] = EditAction::make()
                 ->label('Modifier')
                 ->color('gray');

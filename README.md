@@ -100,6 +100,7 @@ BarberShop Pro est un système de gestion tout-en-un conçu spécifiquement pour
 - ✅ Gestion des produits avec alertes stock bas
 - ✅ Mouvements de stock tracés (entrées/sorties)
 - ✅ Gestion des fournisseurs et commandes d'achat
+- ✅ Réception de commandes conforme à 100% ou partielle avec ajustement précis des stocks
 
 ### Marketing & Analytique
 - ✅ Promotions (pourcentage ou montant fixe)

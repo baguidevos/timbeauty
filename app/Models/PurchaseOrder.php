@@ -58,6 +58,11 @@ class PurchaseOrder extends Model
         return $this->status === 'received';
     }
 
+    public function isPartiallyReceived(): bool
+    {
+        return $this->status === 'partially_received';
+    }
+
     public function isCancelled(): bool
     {
         return $this->status === 'cancelled';

@@ -35,6 +35,7 @@
                             @php
                                 $badgeColor = match($order->status) {
                                     'received' => 'success',
+                                    'partially_received' => 'warning',
                                     'ordered' => 'info',
                                     'pending' => 'warning',
                                     'cancelled' => 'danger',
@@ -42,6 +43,7 @@
                                 };
                                 $badgeIcon = match($order->status) {
                                     'received' => 'heroicon-m-check-circle',
+                                    'partially_received' => 'heroicon-m-cube',
                                     'ordered' => 'heroicon-m-paper-airplane',
                                     'pending' => 'heroicon-m-clock',
                                     'cancelled' => 'heroicon-m-x-circle',
@@ -49,6 +51,7 @@
                                 };
                                 $badgeLabel = match($order->status) {
                                     'received' => 'Reçue & En stock',
+                                    'partially_received' => 'Partiellement reçue',
                                     'ordered' => 'Envoyée au fournisseur',
                                     'pending' => 'En attente d\'envoi',
                                     'cancelled' => 'Annulée',
@@ -131,13 +134,17 @@
                         </div>
 
                         <!-- Étape 3 -->
-                        <div class="flex items-center gap-3 p-3 rounded-xl {{ $stepIndex >= 3 ? 'bg-emerald-50/70 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-900/60' : 'bg-gray-50 border border-gray-100 dark:bg-gray-800/40 dark:border-gray-800' }}">
-                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ $stepIndex >= 3 ? 'bg-emerald-500 text-white font-bold' : 'bg-gray-200 text-gray-600 dark:bg-gray-700' }} text-xs">
+                        <div class="flex items-center gap-3 p-3 rounded-xl {{ $stepIndex >= 3 ? ($order->status === 'partially_received' ? 'bg-amber-50/70 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-900/60' : 'bg-emerald-50/70 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-900/60') : 'bg-gray-50 border border-gray-100 dark:bg-gray-800/40 dark:border-gray-800' }}">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ $stepIndex >= 3 ? ($order->status === 'partially_received' ? 'bg-amber-500 text-white font-bold' : 'bg-emerald-500 text-white font-bold') : 'bg-gray-200 text-gray-600 dark:bg-gray-700' }} text-xs">
                                 3
                             </div>
                             <div class="min-w-0">
-                                <p class="text-xs font-bold text-gray-900 dark:text-white">Reçue & Stocks Mis à Jour</p>
-                                <p class="text-[10px] text-gray-500">Stock automatiquement incrémenté</p>
+                                <p class="text-xs font-bold text-gray-900 dark:text-white">
+                                    {{ $order->status === 'partially_received' ? 'Partiellement Reçue' : 'Reçue & En Stock' }}
+                                </p>
+                                <p class="text-[10px] text-gray-500">
+                                    {{ $order->status === 'partially_received' ? 'En attente du reliquat fournisseur' : 'Stock automatiquement incrémenté' }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -273,11 +280,23 @@
                                     {{ $item->quantity }}
                                 </td>
                                 <td class="p-3.5 text-center">
-                                    @if($order->status === 'received')
-                                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300">
-                                            <x-heroicon-s-check-circle class="h-3 w-3 text-emerald-600" />
-                                            {{ $item->receivedQuantity ?: $item->quantity }} reçus
-                                        </span>
+                                    @if(in_array($order->status, ['received', 'partially_received']))
+                                        @if($item->receivedQuantity >= $item->quantity)
+                                            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                                <x-heroicon-s-check-circle class="h-3 w-3 text-emerald-600" />
+                                                {{ $item->receivedQuantity }} reçus (Complet)
+                                            </span>
+                                        @elseif($item->receivedQuantity > 0)
+                                            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300">
+                                                <x-heroicon-s-exclamation-triangle class="h-3 w-3 text-amber-600" />
+                                                {{ $item->receivedQuantity }}/{{ $item->quantity }} reçus (-{{ $item->quantity - $item->receivedQuantity }})
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300">
+                                                <x-heroicon-s-x-circle class="h-3 w-3 text-rose-600" />
+                                                0/{{ $item->quantity }} reçu (Manquant)
+                                            </span>
+                                        @endif
                                     @else
                                         <span class="text-gray-400 font-mono">—</span>
                                     @endif

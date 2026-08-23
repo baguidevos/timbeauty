@@ -48,6 +48,7 @@ class PurchaseOrdersTable
                     ->icon(fn (string $state): string => match ($state) {
                         'pending' => 'heroicon-o-clock',
                         'ordered' => 'heroicon-o-paper-airplane',
+                        'partially_received' => 'heroicon-o-cube',
                         'received' => 'heroicon-o-check-circle',
                         'cancelled' => 'heroicon-o-x-circle',
                         default => 'heroicon-o-information-circle',
@@ -55,6 +56,7 @@ class PurchaseOrdersTable
                     ->color(fn (string $state): string => match ($state) {
                         'pending' => 'warning',
                         'ordered' => 'info',
+                        'partially_received' => 'warning',
                         'received' => 'success',
                         'cancelled' => 'danger',
                         default => 'gray',
@@ -62,6 +64,7 @@ class PurchaseOrdersTable
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'pending' => 'En attente',
                         'ordered' => 'Envoyée',
+                        'partially_received' => 'Partiellement reçue',
                         'received' => 'Reçue',
                         'cancelled' => 'Annulée',
                         default => $state,
@@ -75,6 +78,7 @@ class PurchaseOrdersTable
                     ->options([
                         'pending' => 'En attente',
                         'ordered' => 'Envoyée',
+                        'partially_received' => 'Partiellement reçue',
                         'received' => 'Reçue',
                         'cancelled' => 'Annulée',
                     ]),
