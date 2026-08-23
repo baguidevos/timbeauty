@@ -14,7 +14,7 @@
         };
     @endphp
 
-    <div class="space-y-6">
+    <div class="space-y-6 print:hidden">
         <!-- ─── 1. Header Bon de Commande Pro ─────────────────────────────────── -->
         <div class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900">
             <div class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl dark:bg-amber-500/15"></div>
@@ -100,9 +100,9 @@
                     <button 
                         type="button"
                         onclick="window.print()" 
-                        class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 shadow-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition">
+                        class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 shadow-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition cursor-pointer">
                         <x-heroicon-o-printer class="h-4 w-4 text-gray-500" />
-                        <span>Imprimer</span>
+                        <span>Imprimer le Bon de Commande (A4)</span>
                     </button>
                 </div>
             </div>
@@ -338,4 +338,199 @@
             </div>
         @endif
     </div>
+
+    <!-- ─── 5. Document A4 Imprimable : Bon de Commande Fournisseur Officiel ───── -->
+    @php
+        $shopName = \App\Models\Setting::get('shop_name', 'TimBeauty');
+        $shopPhone = \App\Models\Setting::get('shop_phone', '+228 90 00 00 00');
+        $shopAddress = \App\Models\Setting::get('shop_address', 'Lomé, Togo');
+        $shopEmail = \App\Models\Setting::get('shop_email', 'contact@timbeauty.tg');
+    @endphp
+
+    <div id="purchase-order-printable" class="hidden print:block p-8 bg-white text-gray-900 max-w-4xl mx-auto text-xs leading-normal">
+        <!-- En-tête : Salon & Titre Bon de Commande -->
+        <div class="flex items-start justify-between border-b-2 border-gray-900 pb-6 mb-6">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl font-black tracking-tight text-gray-950 uppercase">{{ $shopName }}</span>
+                </div>
+                <p class="text-gray-600 text-xs mt-1 font-medium">Salon de Coiffure & Soins Professionnels</p>
+                <p class="text-gray-500 text-[11px] mt-0.5">{{ $shopAddress }} • Tél : {{ $shopPhone }}</p>
+                <p class="text-gray-500 text-[11px]">Email : {{ $shopEmail }}</p>
+            </div>
+
+            <div class="text-right">
+                <span class="inline-block bg-gray-900 text-white font-black text-sm px-3 py-1 rounded uppercase tracking-wider mb-1.5">
+                    BON DE COMMANDE
+                </span>
+                <p class="text-base font-black text-gray-900 font-mono tracking-tight">{{ $order->reference }}</p>
+                <p class="text-gray-600 text-xs mt-1">Date d'émission : <span class="font-bold text-gray-900">{{ $order->orderDate ? \Carbon\Carbon::parse($order->orderDate)->format('d/m/Y') : now()->format('d/m/Y') }}</span></p>
+                @if($order->expectedDate)
+                    <p class="text-gray-600 text-xs">Livraison souhaitée : <span class="font-bold text-gray-900">{{ \Carbon\Carbon::parse($order->expectedDate)->format('d/m/Y') }}</span></p>
+                @endif
+                <p class="text-gray-600 text-xs">Statut : <span class="font-bold uppercase">{{ $order->status === 'received' ? 'Reçue' : ($order->status === 'ordered' ? 'Commandée' : 'En attente') }}</span></p>
+            </div>
+        </div>
+
+        <!-- Encadrés Émetteur / Fournisseur -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+            <!-- Bloc Émetteur (Acheteur) -->
+            <div class="border border-gray-300 rounded-lg p-3.5 bg-gray-50/50">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 border-b border-gray-200 pb-1">
+                    Émis Par (Acheteur) :
+                </p>
+                <p class="font-bold text-gray-900 text-sm">{{ $shopName }}</p>
+                <p class="text-gray-700 text-xs mt-0.5">Responsable : <span class="font-semibold">{{ $order->creator?->name ?? 'Direction Achats' }}</span></p>
+                <p class="text-gray-600 text-xs">Adresse de livraison : {{ $shopAddress }}</p>
+                <p class="text-gray-600 text-xs">Contact réception : {{ $shopPhone }}</p>
+            </div>
+
+            <!-- Bloc Fournisseur (Vendeur) -->
+            <div class="border border-gray-300 rounded-lg p-3.5 bg-gray-50/50">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 border-b border-gray-200 pb-1">
+                    Fournisseur (Destinataire) :
+                </p>
+                @if($supplier)
+                    <p class="font-bold text-gray-900 text-sm">{{ $supplier->name }}</p>
+                    @if($supplier->contactPerson)
+                        <p class="text-gray-700 text-xs mt-0.5">Attn : <span class="font-semibold">{{ $supplier->contactPerson }}</span></p>
+                    @endif
+                    <p class="text-gray-600 text-xs">Tél : {{ $supplier->phone ?: 'Non renseigné' }}</p>
+                    @if($supplier->email)
+                        <p class="text-gray-600 text-xs">Email : {{ $supplier->email }}</p>
+                    @endif
+                    @if($supplier->address)
+                        <p class="text-gray-600 text-xs">Adresse : {{ $supplier->address }}</p>
+                    @endif
+                @else
+                    <p class="font-bold text-gray-700 italic">Fournisseur non spécifié</p>
+                @endif
+            </div>
+        </div>
+
+        <!-- Tableau des Articles Commandés -->
+        <div class="mb-6">
+            <table class="w-full border-collapse border border-gray-300 text-xs">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-800 font-bold uppercase text-[10px] border-b border-gray-300">
+                        <th class="border border-gray-300 p-2 text-center w-10">N°</th>
+                        <th class="border border-gray-300 p-2 text-left">Désignation de l'Article</th>
+                        <th class="border border-gray-300 p-2 text-center w-24">Quantité</th>
+                        <th class="border border-gray-300 p-2 text-right w-28">Prix Unitaire</th>
+                        <th class="border border-gray-300 p-2 text-right w-32">Total (FCFA)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($items as $index => $item)
+                        <tr class="border-b border-gray-200 {{ $index % 2 === 1 ? 'bg-gray-50/40' : '' }}">
+                            <td class="border border-gray-300 p-2 text-center font-mono text-gray-500">{{ $index + 1 }}</td>
+                            <td class="border border-gray-300 p-2 font-bold text-gray-900">
+                                {{ $item->productName }}
+                                @if($item->product && $item->product->category)
+                                    <span class="text-[10px] font-normal text-gray-500 block">({{ $item->product->category->name }})</span>
+                                @endif
+                            </td>
+                            <td class="border border-gray-300 p-2 text-center font-bold text-gray-900 text-sm">
+                                {{ $item->quantity }}
+                            </td>
+                            <td class="border border-gray-300 p-2 text-right font-medium text-gray-800">
+                                {{ number_format($item->unitPrice, 0, ',', ' ') }}
+                            </td>
+                            <td class="border border-gray-300 p-2 text-right font-bold text-gray-950">
+                                {{ number_format($item->totalPrice, 0, ',', ' ') }}
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr class="bg-gray-50 font-bold">
+                        <td colspan="4" class="border border-gray-300 p-2 text-right uppercase tracking-wider text-gray-700">Total Général Commande :</td>
+                        <td class="border border-gray-300 p-2 text-right font-black text-sm text-gray-950">
+                            {{ number_format($stats['totalAmount'], 0, ',', ' ') }} FCFA
+                        </td>
+                    </tr>
+                    @if($stats['paidAmount'] > 0)
+                        <tr class="font-medium text-gray-700">
+                            <td colspan="4" class="border border-gray-300 p-2 text-right">Acompte versé / Déjà payé :</td>
+                            <td class="border border-gray-300 p-2 text-right font-bold text-emerald-700">
+                                - {{ number_format($stats['paidAmount'], 0, ',', ' ') }} FCFA
+                            </td>
+                        </tr>
+                    @endif
+                    <tr class="bg-gray-100 font-bold">
+                        <td colspan="4" class="border border-gray-300 p-2 text-right uppercase tracking-wider text-gray-900">Solde Dû à Livraison :</td>
+                        <td class="border border-gray-300 p-2 text-right font-black text-sm text-gray-950">
+                            {{ number_format($stats['remainingAmount'], 0, ',', ' ') }} FCFA
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Notes et Instructions de Livraison -->
+        @if($order->notes)
+            <div class="border border-gray-300 rounded-lg p-3 mb-6 bg-gray-50/30">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">
+                    Conditions & Instructions Particulières :
+                </p>
+                <p class="text-xs text-gray-800 whitespace-pre-line leading-relaxed">
+                    {{ $order->notes }}
+                </p>
+            </div>
+        @endif
+
+        <!-- Cadres d'Émargement / Signatures -->
+        <div class="grid grid-cols-2 gap-8 pt-4 mb-8">
+            <div class="border border-gray-300 rounded-lg p-3 text-center h-28 flex flex-col justify-between">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-600 border-b border-gray-200 pb-1">
+                    Pour l'Établissement (Visa & Signature)
+                </p>
+                <div class="text-[10px] text-gray-400 italic">Signature & Cachet</div>
+            </div>
+
+            <div class="border border-gray-300 rounded-lg p-3 text-center h-28 flex flex-col justify-between">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-600 border-b border-gray-200 pb-1">
+                    Pour le Fournisseur (Bon pour accord & Date)
+                </p>
+                <div class="text-[10px] text-gray-400 italic">Date & Signature du livreur / commercial</div>
+            </div>
+        </div>
+
+        <!-- Pied de page mentions -->
+        <div class="border-t border-gray-200 pt-3 flex items-center justify-between text-[10px] text-gray-400">
+            <span>{{ $shopName }} • Logiciel de Gestion Professionnel</span>
+            <span>Document émis le {{ now()->format('d/m/Y à H:i') }}</span>
+        </div>
+    </div>
+
+    <!-- ─── 6. Styles Print CSS A4 ─────────────────────────────────────────── -->
+    <style>
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm 12mm;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            body * {
+                visibility: hidden;
+            }
+            #purchase-order-printable, #purchase-order-printable * {
+                visibility: visible;
+            }
+            #purchase-order-printable {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            .fi-page, .fi-page-header, .fi-sidebar, .fi-topbar, .fi-header-actions, .fi-breadcrumbs, button {
+                display: none !important;
+            }
+        }
+    </style>
 </x-filament-panels::page>
