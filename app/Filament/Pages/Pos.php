@@ -824,6 +824,49 @@ class Pos extends Page
 
     // ─── Data Accessors ──────────────────────────────────────────────
 
+    public function getActivePromotionsMap(): array
+    {
+        $today = now()->toDateString();
+        $promotions = Promotion::where('status', 'active')
+            ->where(function ($q) use ($today) {
+                $q->whereNull('startDate')->orWhere('startDate', '<=', $today);
+            })
+            ->where(function ($q) use ($today) {
+                $q->whereNull('endDate')->orWhere('endDate', '>=', $today);
+            })
+            ->where(function ($q) {
+                $q->whereNull('maxUsages')->orWhereColumn('currentUsages', '<', 'maxUsages');
+            })
+            ->with('categories')
+            ->get();
+
+        $map = [
+            'byCategory' => [],
+            'global' => null,
+        ];
+
+        foreach ($promotions as $promo) {
+            if ($promo->categories->isEmpty()) {
+                if (! $map['global']) {
+                    $map['global'] = $promo;
+                }
+            } else {
+                foreach ($promo->categories as $cat) {
+                    if (! isset($map['byCategory'][$cat->id])) {
+                        $map['byCategory'][$cat->id] = $promo;
+                    }
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    public function getPromotionForService(Service $service, array $promotionsMap): ?Promotion
+    {
+        return $promotionsMap['byCategory'][$service->categoryId] ?? $promotionsMap['global'] ?? null;
+    }
+
     public function getCategories(): Collection
     {
         return ServiceCategory::with(['services' => function ($q) {

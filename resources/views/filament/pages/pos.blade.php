@@ -186,6 +186,9 @@
                 <div class="h-[calc(100vh-260px)] min-h-[450px] overflow-y-auto pr-2 space-y-6">
                     <!-- ─── VUE DES PRESTATIONS ────────────────────────────── -->
                     @if($activeTab === 'services')
+                        @php
+                            $activePromosMap = $this->getActivePromotionsMap();
+                        @endphp
                         <div class="space-y-6">
                             <!-- Bandeau des Prestations Populaires -->
                             @if(!$searchQuery && $popularServices->isNotEmpty())
@@ -196,11 +199,24 @@
                                     </div>
                                     <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
                                         @foreach($popularServices as $popular)
+                                            @php
+                                                $popularPromo = $this->getPromotionForService($popular, $activePromosMap);
+                                            @endphp
                                             <button
                                                 wire:click="addToCart('service', {{ $popular->id }})"
                                                 type="button"
-                                                class="group relative flex flex-col justify-between rounded-xl border border-amber-300/60 bg-amber-50/40 p-2.5 text-left shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-amber-500 hover:bg-amber-100/60 hover:shadow-md active:translate-y-0 active:scale-98 dark:border-amber-500/30 dark:bg-amber-950/20 dark:hover:bg-amber-900/40"
+                                                class="group relative flex flex-col justify-between rounded-xl border {{ $popularPromo ? 'border-amber-400/80 bg-amber-50/60 dark:border-amber-500/50 dark:bg-amber-950/30' : 'border-amber-300/60 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-950/20' }} p-2.5 text-left shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-amber-500 hover:bg-amber-100/60 hover:shadow-md active:translate-y-0 active:scale-98 dark:hover:bg-amber-900/40"
                                             >
+                                                @if($popularPromo)
+                                                    <span 
+                                                        title="{{ $popularPromo->name }}" 
+                                                        class="absolute -top-2 -right-1.5 inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white px-1.5 py-0.5 text-[9px] font-black shadow-xs ring-1 ring-white dark:ring-gray-900"
+                                                    >
+                                                        <x-heroicon-m-tag class="h-2.5 w-2.5 stroke-[2.5]" />
+                                                        {{ $popularPromo->formatted_value }}
+                                                    </span>
+                                                @endif
+
                                                 <div class="min-w-0">
                                                     <p class="truncate text-xs font-bold text-gray-900 transition group-hover:text-amber-600 dark:text-white">
                                                         {{ $popular->name }}
@@ -226,23 +242,45 @@
                             <!-- Prestations groupées par catégorie -->
                             @forelse($categories as $category)
                                 @if($category->services->isNotEmpty())
+                                    @php
+                                        $categoryPromo = $activePromosMap['byCategory'][$category->id] ?? $activePromosMap['global'] ?? null;
+                                    @endphp
                                     <x-filament::section>
                                         <x-slot name="heading">
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 flex-wrap">
                                                 <span>{{ $category->name }}</span>
                                                 <x-filament::badge color="gray" size="xs">
                                                     {{ $category->services->count() }}
                                                 </x-filament::badge>
+                                                @if($categoryPromo)
+                                                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300 px-2 py-0.5 text-[11px] font-bold ring-1 ring-amber-500/30">
+                                                        <x-heroicon-m-sparkles class="h-3 w-3 text-amber-500" />
+                                                        Promo active ({{ $categoryPromo->formatted_value }})
+                                                    </span>
+                                                @endif
                                             </div>
                                         </x-slot>
 
                                         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                                             @foreach($category->services as $service)
+                                                @php
+                                                    $servicePromo = $this->getPromotionForService($service, $activePromosMap);
+                                                @endphp
                                                 <button
                                                     wire:click="addToCart('service', {{ $service->id }})"
                                                     type="button"
-                                                    class="group relative flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-3 text-left shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md active:translate-y-0 active:scale-98 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-amber-500"
+                                                    class="group relative flex flex-col justify-between rounded-xl border {{ $servicePromo ? 'border-amber-400/70 bg-gradient-to-b from-amber-50/30 to-white dark:from-amber-950/20 dark:to-gray-900 dark:border-amber-500/40 ring-1 ring-amber-400/20' : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900' }} p-3 text-left shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md active:translate-y-0 active:scale-98 dark:hover:border-amber-500"
                                                 >
+                                                    @if($servicePromo)
+                                                        <span 
+                                                            title="{{ $servicePromo->name }}" 
+                                                            class="absolute -top-2 -right-1.5 inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white px-2 py-0.5 text-[10px] font-black shadow-xs ring-2 ring-white dark:ring-gray-900"
+                                                        >
+                                                            <x-heroicon-m-tag class="h-2.5 w-2.5 stroke-[2.5]" />
+                                                            {{ $servicePromo->formatted_value }}
+                                                        </span>
+                                                    @endif
+
                                                     <div>
                                                         <h4 class="text-xs font-bold leading-tight text-gray-900 group-hover:text-amber-600 dark:text-white transition">
                                                             {{ $service->name }}

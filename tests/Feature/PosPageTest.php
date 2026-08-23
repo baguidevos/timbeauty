@@ -369,3 +369,20 @@ it('only applies promotion discount to the specific assigned categories in cart'
         ->and($test2->instance()->getDiscountAmount())->toBe(0.0)
         ->and($test2->instance()->getTotal())->toBe(5000.0);
 });
+
+it('displays promo badge on service cards in POS when a valid promotion is active', function () {
+    $this->actingAs($this->admin);
+
+    $promo = Promotion::create([
+        'name' => 'Flash -30% Coupe',
+        'type' => 'percentage',
+        'value' => 30,
+        'status' => 'active',
+    ]);
+    $promo->categories()->attach($this->category->id);
+
+    Livewire::test(Pos::class)
+        ->assertSuccessful()
+        ->assertSee('-30%')
+        ->assertSee('Promo active (-30%)');
+});
