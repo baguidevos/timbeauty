@@ -194,4 +194,158 @@ class ViewSale extends ViewRecord
 
         return $promotion->categories->pluck('id')->contains($service->categoryId);
     }
+
+    // ─── Modal State for Item Return / Cancellation ────────────────
+    public bool $showReturnModal = false;
+
+    public ?int $selectedReturnItemId = null;
+
+    public int $returnQuantity = 1;
+
+    public string $returnReason = '';
+
+    public bool $showCancelServiceModal = false;
+
+    public ?int $selectedCancelItemId = null;
+
+    public string $cancelServiceReason = '';
+
+    public function openReturnModal(int $itemId): void
+    {
+        $item = SaleItem::where('saleId', $this->record->id)->find($itemId);
+        if (! $item || $item->type !== 'product') {
+            return;
+        }
+
+        $remainingQty = max(1, $item->quantity - $item->refundedQuantity);
+        $this->selectedReturnItemId = $itemId;
+        $this->returnQuantity = $remainingQty;
+        $this->returnReason = '';
+        $this->showReturnModal = true;
+        $this->dispatch('open-modal', id: 'return-product-modal');
+    }
+
+    public function submitReturnProduct(): void
+    {
+        if (! $this->selectedReturnItemId) {
+            return;
+        }
+
+        $item = SaleItem::where('saleId', $this->record->id)->find($this->selectedReturnItemId);
+        if (! $item || $item->type !== 'product') {
+            return;
+        }
+
+        $maxQty = max(1, $item->quantity - $item->refundedQuantity);
+        $qtyToReturn = min($maxQty, max(1, (int) $this->returnQuantity));
+
+        // Re-increment stock
+        if ($item->itemId) {
+            $product = Product::find($item->itemId);
+            if ($product) {
+                $product->increment('stockQuantity', $qtyToReturn);
+
+                StockMovement::create([
+                    'productId' => $product->id,
+                    'type' => 'in',
+                    'quantity' => $qtyToReturn,
+                    'reason' => "Retour article vente #{$this->record->id} : ".($this->returnReason ?: 'Retour client'),
+                    'reference' => "RETURN-SALE-{$this->record->id}",
+                ]);
+            }
+        }
+
+        $newRefunded = $item->refundedQuantity + $qtyToReturn;
+        $item->update([
+            'refundedQuantity' => $newRefunded,
+            'status' => ($newRefunded >= $item->quantity) ? 'returned' : 'completed',
+            'cancelReason' => $this->returnReason ?: $item->cancelReason,
+        ]);
+
+        $this->recalculateSaleTotals();
+        $this->showReturnModal = false;
+        $this->dispatch('close-modal', id: 'return-product-modal');
+
+        Notification::make()
+            ->title("{$qtyToReturn}x {$item->name} retourné(s) et réintégré(s) en stock")
+            ->success()
+            ->send();
+    }
+
+    public function openCancelServiceModal(int $itemId): void
+    {
+        $item = SaleItem::where('saleId', $this->record->id)->find($itemId);
+        if (! $item || $item->type !== 'service') {
+            return;
+        }
+
+        $this->selectedCancelItemId = $itemId;
+        $this->cancelServiceReason = '';
+        $this->showCancelServiceModal = true;
+        $this->dispatch('open-modal', id: 'cancel-service-modal');
+    }
+
+    public function submitCancelService(): void
+    {
+        if (! $this->selectedCancelItemId) {
+            return;
+        }
+
+        $item = SaleItem::where('saleId', $this->record->id)->find($this->selectedCancelItemId);
+        if (! $item || $item->type !== 'service') {
+            return;
+        }
+
+        $item->update([
+            'status' => 'cancelled',
+            'cancelReason' => $this->cancelServiceReason ?: 'Prestation annulée',
+        ]);
+
+        $this->recalculateSaleTotals();
+        $this->showCancelServiceModal = false;
+        $this->dispatch('close-modal', id: 'cancel-service-modal');
+
+        Notification::make()
+            ->title("Prestation {$item->name} annulée")
+            ->body('Le montant a été déduit du total de la vente.')
+            ->warning()
+            ->send();
+    }
+
+    public function recalculateSaleTotals(): void
+    {
+        $sale = $this->record->fresh(['items']);
+        $newSubtotal = 0;
+
+        foreach ($sale->items as $item) {
+            if ($item->type === 'service') {
+                if ($item->status !== 'cancelled') {
+                    $newSubtotal += ($item->quantity * $item->unitPrice);
+                }
+            } elseif ($item->type === 'product') {
+                $effectiveQty = max(0, $item->quantity - $item->refundedQuantity);
+                $newSubtotal += ($effectiveQty * $item->unitPrice);
+            }
+        }
+
+        $activeItemsCount = $sale->items->filter(function ($it) {
+            if ($it->type === 'service') {
+                return $it->status !== 'cancelled';
+            }
+
+            return ($it->quantity - $it->refundedQuantity) > 0;
+        })->count();
+
+        $discount = (float) $sale->discountAmount;
+        $newTotal = max(0, $newSubtotal - $discount);
+        $newStatus = $activeItemsCount === 0 ? 'cancelled' : $sale->status;
+
+        $sale->update([
+            'subtotal' => $newSubtotal,
+            'total' => $newTotal,
+            'status' => $newStatus,
+        ]);
+
+        $this->record = $sale->fresh(['items', 'client', 'barber']);
+    }
 }

@@ -18,6 +18,9 @@ class SaleItem extends Model
         'unitPrice',
         'discount',
         'total',
+        'status',
+        'refundedQuantity',
+        'cancelReason',
     ];
 
     protected function casts(): array
@@ -27,6 +30,7 @@ class SaleItem extends Model
             'unitPrice' => 'decimal:0',
             'discount' => 'decimal:0',
             'total' => 'decimal:0',
+            'refundedQuantity' => 'integer',
         ];
     }
 

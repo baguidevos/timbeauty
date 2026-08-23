@@ -1,4 +1,4 @@
-# 💈 BarberShop Pro
+# 💈 TimBeauty
 
 > Système de gestion complet pour salon de coiffure — **open source**, **100% en français**, pensé pour l'Afrique de l'Ouest.
 
@@ -80,7 +80,9 @@ BarberShop Pro est un système de gestion tout-en-un conçu spécifiquement pour
 - ✅ Planning des rendez-vous (vue jour, semaine, mois)
 - ✅ Point de vente (POS) avec panier et multi-paiement
 - ✅ Gestion de caisse (ouverture, fermeture, transactions)
-- ✅ Reçus de vente imprimables (58mm/80mm)
+- ✅ Fiche de vente détaillée et reçus imprimables (58mm/80mm / A4)
+- ✅ Gestion des retours produits et annulation de prestations avec réintégration des stocks
+- ✅ Édition complète des ventes avec synchronisation automatique d'inventaire
 
 ### Gestion des personnes
 - ✅ Fiches clients complètes avec historique

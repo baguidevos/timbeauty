@@ -323,6 +323,7 @@
                             <th class="p-3.5 text-center">Quantité</th>
                             <th class="p-3.5 text-right">Remise Ligne</th>
                             <th class="p-3.5 text-right">Total Ligne</th>
+                            <th class="p-3.5 text-center">Statut / Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
@@ -330,8 +331,10 @@
                             @php
                                 $service = $item->type === 'service' ? $this->getServiceForItem($item) : null;
                                 $isPromoted = $this->isItemEligibleForSalePromotion($item, $promotion);
+                                $isCancelled = $item->status === 'cancelled';
+                                $isReturned = $item->status === 'returned';
                             @endphp
-                            <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition">
+                            <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition {{ ($isCancelled || $isReturned) ? 'opacity-60 bg-gray-50/40 dark:bg-gray-900/40' : '' }}">
                                 <td class="p-3.5">
                                     @if($item->type === 'service')
                                         <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800">
@@ -347,7 +350,9 @@
                                 </td>
                                 <td class="p-3.5">
                                     <div class="flex items-center gap-2 flex-wrap">
-                                        <p class="font-bold text-gray-900 dark:text-white">{{ $item->name }}</p>
+                                        <p class="font-bold {{ ($isCancelled || $isReturned) ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white' }}">
+                                            {{ $item->name }}
+                                        </p>
                                         @if($service && $service->category)
                                             <span class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                                 {{ $service->category->name }}
@@ -363,6 +368,11 @@
                                             </span>
                                         @endif
                                     </div>
+                                    @if($item->cancelReason)
+                                        <p class="text-[11px] text-gray-500 dark:text-gray-400 italic mt-0.5">
+                                            Motif : {{ $item->cancelReason }}
+                                        </p>
+                                    @endif
                                 </td>
                                 <td class="p-3.5 text-right text-gray-600 dark:text-gray-300 font-semibold">
                                     {{ \App\Helpers\FormatHelper::formatFCFA($item->unitPrice) }}
@@ -379,32 +389,65 @@
                                         <span class="text-gray-400">—</span>
                                     @endif
                                 </td>
-                                <td class="p-3.5 text-right font-black text-gray-950 dark:text-white">
+                                <td class="p-3.5 text-right font-black {{ ($isCancelled || $isReturned) ? 'line-through text-gray-400' : 'text-gray-950 dark:text-white' }}">
                                     {{ \App\Helpers\FormatHelper::formatFCFA($item->total) }}
+                                </td>
+                                <td class="p-3.5 text-center">
+                                    @if($isReturned)
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300">
+                                            📦 Retourné (x{{ $item->refundedQuantity }})
+                                        </span>
+                                    @elseif($isCancelled)
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-zinc-100 text-zinc-700 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300">
+                                            ❌ Annulée
+                                        </span>
+                                    @elseif($sale->status !== 'cancelled')
+                                        @if($item->type === 'product')
+                                            <button
+                                                wire:click="openReturnModal({{ $item->id }})"
+                                                type="button"
+                                                class="inline-flex items-center gap-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 text-[11px] font-bold border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 transition shadow-2xs"
+                                                title="Enregistrer un retour produit et réintégrer le stock"
+                                            >
+                                                <x-heroicon-m-arrow-uturn-left class="h-3 w-3" />
+                                                Retourner
+                                            </button>
+                                        @else
+                                            <button
+                                                wire:click="openCancelServiceModal({{ $item->id }})"
+                                                type="button"
+                                                class="inline-flex items-center gap-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 px-2.5 py-1 text-[11px] font-bold border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 transition shadow-2xs"
+                                                title="Annuler cette prestation et ajuster la facture"
+                                            >
+                                                <x-heroicon-m-x-mark class="h-3 w-3" />
+                                                Annuler
+                                            </button>
+                                        @endif
+                                    @else
+                                        <span class="text-gray-400 text-xs">—</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot class="bg-gray-50/80 dark:bg-gray-800/80 border-t-2 border-gray-200 dark:border-gray-700 font-bold text-xs">
                         <tr>
-                            <td colspan="4" class="p-3.5 text-right uppercase tracking-wider text-gray-500">Sous-total Brut :</td>
+                            <td colspan="5" class="p-3.5 text-right uppercase tracking-wider text-gray-500">Sous-total Brut :</td>
                             <td colspan="2" class="p-3.5 text-right text-gray-900 dark:text-white">
                                 {{ \App\Helpers\FormatHelper::formatFCFA($stats['subtotal']) }}
                             </td>
                         </tr>
                         @if($stats['discountAmount'] > 0)
                             <tr class="text-rose-600 dark:text-rose-400">
-                                <td colspan="4" class="p-2.5 text-right uppercase tracking-wider">Remise Déduite :</td>
+                                <td colspan="5" class="p-2.5 text-right uppercase tracking-wider">Remise Déduite :</td>
                                 <td colspan="2" class="p-2.5 text-right">
                                     - {{ \App\Helpers\FormatHelper::formatFCFA($stats['discountAmount']) }}
                                 </td>
                             </tr>
                         @endif
-                        <tr class="text-base text-gray-950 dark:text-white">
-                            <td colspan="4" class="p-4 text-right uppercase tracking-wider font-extrabold text-amber-600 dark:text-amber-400">
-                                Total Net Payé (TTC) :
-                            </td>
-                            <td colspan="2" class="p-4 text-right font-black text-xl text-amber-600 dark:text-amber-400">
+                        <tr class="text-sm font-black bg-amber-500/10 text-amber-900 dark:text-amber-300">
+                            <td colspan="5" class="p-3.5 text-right uppercase tracking-wider">TOTAL NET FACTURE :</td>
+                            <td colspan="2" class="p-3.5 text-right text-base text-amber-600 dark:text-amber-400">
                                 {{ \App\Helpers\FormatHelper::formatFCFA($stats['total']) }}
                             </td>
                         </tr>
@@ -499,7 +542,113 @@
         </div>
     </div>
 
-    <!-- ─── 6. Format Ticket Thermique / Style Print ────────────────────── -->
+    <!-- ─── 6. Modales d'Action par Ligne (Retour Produit & Annulation Prestation) ─── -->
+    <x-filament::modal id="return-product-modal" width="md" icon="heroicon-o-arrow-uturn-left" icon-color="danger">
+        <x-slot name="heading">
+            Retourner un produit en stock
+        </x-slot>
+
+        <x-slot name="description">
+            Enregistrez le retour de cet article. La quantité choisie sera immédiatement réintégrée dans le stock du salon.
+        </x-slot>
+
+        <form wire:submit="submitReturnProduct" id="returnProductForm" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Quantité à retourner <span class="text-rose-500">*</span>
+                </label>
+                <x-filament::input.wrapper>
+                    <x-filament::input
+                        type="number"
+                        wire:model="returnQuantity"
+                        min="1"
+                        required
+                    />
+                </x-filament::input.wrapper>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Motif du retour
+                </label>
+                <x-filament::input.wrapper>
+                    <x-filament::input
+                        type="text"
+                        wire:model="returnReason"
+                        placeholder="Ex: Produit défectueux, changement d'avis client..."
+                    />
+                </x-filament::input.wrapper>
+            </div>
+        </form>
+
+        <x-slot name="footerActions">
+            <x-filament::button
+                x-on:click="$dispatch('close-modal', { id: 'return-product-modal' })"
+                type="button"
+                color="gray"
+            >
+                Fermer
+            </x-filament::button>
+
+            <x-filament::button
+                wire:click="submitReturnProduct"
+                type="submit"
+                form="returnProductForm"
+                color="danger"
+                icon="heroicon-m-check"
+            >
+                Confirmer le Retour & Réintégrer Stock
+            </x-filament::button>
+        </x-slot>
+    </x-filament::modal>
+
+    <x-filament::modal id="cancel-service-modal" width="md" icon="heroicon-o-x-mark" icon-color="warning">
+        <x-slot name="heading">
+            Annuler une prestation
+        </x-slot>
+
+        <x-slot name="description">
+            Annulez cette prestation pour ajuster la facture. Le montant sera automatiquement déduit du total réglé.
+        </x-slot>
+
+        <form wire:submit="submitCancelService" id="cancelServiceForm" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Motif de l'annulation <span class="text-rose-500">*</span>
+                </label>
+                <x-filament::input.wrapper>
+                    <x-filament::input
+                        type="text"
+                        wire:model="cancelServiceReason"
+                        placeholder="Ex: Insatisfaction, geste commercial, erreur de caisse..."
+                        required
+                    />
+                </x-filament::input.wrapper>
+            </div>
+        </form>
+
+        <x-slot name="footerActions">
+            <x-filament::button
+                x-on:click="$dispatch('close-modal', { id: 'cancel-service-modal' })"
+                type="button"
+                color="gray"
+            >
+                Fermer
+            </x-filament::button>
+
+            <x-filament::button
+                wire:click="submitCancelService"
+                type="submit"
+                form="cancelServiceForm"
+                color="warning"
+                icon="heroicon-m-check"
+            >
+                Confirmer l'Annulation
+            </x-filament::button>
+        </x-slot>
+    </x-filament::modal>
+
+    <!-- ─── 7. Format Ticket Thermique / Style Print ────────────────────── -->
     <style>
         @media print {
             body * {

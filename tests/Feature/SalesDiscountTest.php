@@ -65,6 +65,26 @@ it('can render sales list and filter by has_discount', function () {
         ->assertCanNotSeeTableRecords([$this->saleWithoutDiscount]);
 });
 
+it('displays client anonyme in sales table when sale has no associated client', function () {
+    $this->actingAs($this->admin);
+
+    $anonymousSale = Sale::create([
+        'clientId' => null,
+        'barberId' => null,
+        'subtotal' => 2000,
+        'discountAmount' => 0,
+        'total' => 2000,
+        'paymentMethod' => 'cash',
+        'status' => 'completed',
+        'createdBy' => $this->admin->id,
+    ]);
+
+    Livewire::test(ListSales::class)
+        ->assertSuccessful()
+        ->assertCanSeeTableRecords([$anonymousSale])
+        ->assertSee('Client anonyme');
+});
+
 it('can render edit client page with relations', function () {
     $this->actingAs($this->admin);
 

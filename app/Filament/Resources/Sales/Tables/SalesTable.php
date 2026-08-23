@@ -24,11 +24,13 @@ class SalesTable
                     ->sortable(),
                 TextColumn::make('client.firstName')
                     ->label('Client')
-                    ->formatStateUsing(fn ($record) => $record->client ? $record->client->firstName.' '.$record->client->lastName : '-')
+                    ->formatStateUsing(fn ($record) => $record->client ? $record->client->getFullName() : 'Client anonyme')
+                    ->placeholder('Client anonyme')
                     ->searchable(),
                 TextColumn::make('barber.firstName')
                     ->label('Coiffeur')
-                    ->formatStateUsing(fn ($record) => $record->barber?->firstName.' '.$record->barber?->lastName)
+                    ->formatStateUsing(fn ($record) => $record->barber?->getFullName())
+                    ->placeholder('—')
                     ->searchable(),
                 TextColumn::make('subtotal')
                     ->label('Sous-total')
