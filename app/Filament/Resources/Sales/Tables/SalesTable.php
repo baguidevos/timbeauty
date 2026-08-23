@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Sales\Tables;
 
+use App\Filament\Resources\Sales\SaleResource;
 use App\Helpers\FormatHelper;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -106,9 +107,12 @@ class SalesTable
                     ->relationship('barber', 'firstName')
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->firstName.' '.$record->lastName),
             ])
+            ->recordUrl(fn ($record) => SaleResource::getUrl('view', ['record' => $record]))
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                    ->url(fn ($record) => SaleResource::getUrl('view', ['record' => $record])),
+                EditAction::make()
+                    ->slideOver(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

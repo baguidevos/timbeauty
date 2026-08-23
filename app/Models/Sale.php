@@ -21,6 +21,7 @@ class Sale extends Model
         'status',
         'notes',
         'cashRegisterId',
+        'promotionId',
         'createdBy',
     ];
 
@@ -51,6 +52,11 @@ class Sale extends Model
     public function cashRegister()
     {
         return $this->belongsTo(CashRegister::class, 'cashRegisterId');
+    }
+
+    public function promotion()
+    {
+        return $this->belongsTo(Promotion::class, 'promotionId');
     }
 
     public function creator()

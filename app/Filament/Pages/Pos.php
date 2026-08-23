@@ -593,6 +593,7 @@ class Pos extends Page
                 'paymentMethod' => $this->paymentMethod,
                 'status' => 'completed',
                 'notes' => $this->notes ?: null,
+                'promotionId' => $this->selectedPromotionId ?: null,
                 'createdBy' => auth()->id(),
             ]);
 
@@ -639,13 +640,11 @@ class Pos extends Page
             if ($this->selectedPromotionId) {
                 $appliedPromo = Promotion::find($this->selectedPromotionId);
                 if ($appliedPromo) {
-                    if ($sale->clientId) {
-                        PromotionUsage::create([
-                            'promotionId' => $appliedPromo->id,
-                            'clientId' => $sale->clientId,
-                            'saleId' => $sale->id,
-                        ]);
-                    }
+                    PromotionUsage::create([
+                        'promotionId' => $appliedPromo->id,
+                        'clientId' => $sale->clientId,
+                        'saleId' => $sale->id,
+                    ]);
                     $appliedPromo->increment('currentUsages');
                 }
             }
