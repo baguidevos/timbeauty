@@ -315,28 +315,33 @@ it('can remove an applied promotion from POS cart', function () {
         ->assertSet('discountValue', 0);
 });
 
-it('only applies promotion discount to the specific assigned services in cart', function () {
+it('only applies promotion discount to the specific assigned categories in cart', function () {
     $this->actingAs($this->admin);
 
-    // Create a second service (5000 FCFA)
+    // Create Category B and Service B (5000 FCFA)
+    $categoryB = ServiceCategory::create([
+        'name' => 'Soins Test',
+        'order' => 2,
+    ]);
+
     $serviceB = Service::create([
         'name' => 'Soin Barbe Deluxe',
         'price' => 5000,
         'duration' => 45,
-        'categoryId' => $this->category->id,
+        'categoryId' => $categoryB->id,
         'status' => 'active',
     ]);
 
-    // Create a promo of 50% only assigned to $this->service (3500 FCFA)
+    // Create a promo of 50% only assigned to Category A ($this->category)
     $targetedPromo = Promotion::create([
         'name' => 'Flash 50% Coupe Homme',
         'type' => 'percentage',
         'value' => 50,
         'status' => 'active',
     ]);
-    $targetedPromo->services()->attach($this->service->id);
+    $targetedPromo->categories()->attach($this->category->id);
 
-    // Add Service A (3500 FCFA), Service B (5000 FCFA), and Product (2000 FCFA) -> Subtotal = 10500 FCFA
+    // Add Service A (3500 FCFA, Cat A), Service B (5000 FCFA, Cat B), and Product (2000 FCFA) -> Subtotal = 10500 FCFA
     $test = Livewire::test(Pos::class)
         ->call('addToCart', 'service', $this->service->id)
         ->call('addToCart', 'service', $serviceB->id)
@@ -355,7 +360,7 @@ it('only applies promotion discount to the specific assigned services in cart', 
         ->and((float) $sale->discountAmount)->toBe(1750.0)
         ->and((float) $sale->total)->toBe(8750.0);
 
-    // If cart has only Service B (5000 FCFA), targeted promo on Service A must give 0 FCFA discount
+    // If cart has only Service B (Cat B), targeted promo on Cat A must give 0 FCFA discount
     $test2 = Livewire::test(Pos::class)
         ->call('addToCart', 'service', $serviceB->id)
         ->call('applyPromotion', $targetedPromo->id);

@@ -24,9 +24,12 @@ class PromotionsTable
                     ->sortable()
                     ->weight('bold')
                     ->description(function (Promotion $record) {
-                        $count = $record->services()->count();
+                        $categories = $record->categories;
+                        $count = $categories->count();
 
-                        return $count > 0 ? "{$count} prestation(s) éligible(s)" : 'Toutes prestations';
+                        return $count > 0
+                            ? "{$count} catégorie(s) : ".$categories->pluck('name')->join(', ')
+                            : 'Toutes les catégories';
                     }),
 
                 TextColumn::make('type')

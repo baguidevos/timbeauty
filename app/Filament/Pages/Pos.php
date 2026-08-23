@@ -284,23 +284,24 @@ class Pos extends Page
 
         $this->selectedPromotionId = $promotion->id;
 
-        $eligibleServiceIds = $promotion->services->pluck('id')->toArray();
+        $eligibleCategoryIds = $promotion->categories->pluck('id')->toArray();
         $hasEligibleInCart = false;
 
         foreach ($this->cart as $item) {
             if ($item['type'] === 'service') {
-                if (empty($eligibleServiceIds) || in_array((int) $item['itemId'], $eligibleServiceIds, true)) {
+                $categoryId = $item['categoryId'] ?? Service::find($item['itemId'])?->categoryId;
+                if (empty($eligibleCategoryIds) || ($categoryId && in_array((int) $categoryId, $eligibleCategoryIds, true))) {
                     $hasEligibleInCart = true;
                     break;
                 }
             }
         }
 
-        if (! empty($eligibleServiceIds) && ! $hasEligibleInCart) {
-            $eligibleNames = $promotion->services->pluck('name')->implode(', ');
+        if (! empty($eligibleCategoryIds) && ! $hasEligibleInCart) {
+            $eligibleNames = $promotion->categories->pluck('name')->implode(', ');
             Notification::make()
                 ->title('Aucune prestation éligible dans le panier.')
-                ->body("Cette offre s'applique uniquement à : {$eligibleNames}")
+                ->body("Cette offre s'applique uniquement aux catégories : {$eligibleNames}")
                 ->warning()
                 ->send();
         }
@@ -315,7 +316,8 @@ class Pos extends Page
             $discount = 0;
             foreach ($this->cart as $item) {
                 if ($item['type'] === 'service') {
-                    if (empty($eligibleServiceIds) || in_array((int) $item['itemId'], $eligibleServiceIds, true)) {
+                    $categoryId = $item['categoryId'] ?? Service::find($item['itemId'])?->categoryId;
+                    if (empty($eligibleCategoryIds) || ($categoryId && in_array((int) $categoryId, $eligibleCategoryIds, true))) {
                         $discount = max($discount, (float) $item['unitPrice']);
                     }
                 }
@@ -326,9 +328,9 @@ class Pos extends Page
 
         $this->saveCartToSession();
 
-        $targetText = ! empty($eligibleServiceIds)
-            ? ' (sur : '.$promotion->services->pluck('name')->implode(', ').')'
-            : ' (sur toutes les prestations)';
+        $targetText = ! empty($eligibleCategoryIds)
+            ? ' (catégories : '.$promotion->categories->pluck('name')->implode(', ').')'
+            : ' (sur toutes les catégories de prestations)';
 
         Notification::make()
             ->title("Promotion « {$promotion->name} » appliquée !")
@@ -373,6 +375,7 @@ class Pos extends Page
                 $this->cart[$key] = [
                     'type' => 'service',
                     'itemId' => $service->id,
+                    'categoryId' => $service->categoryId,
                     'name' => $service->name,
                     'unitPrice' => (float) $service->price,
                     'duration' => $service->duration,
@@ -744,16 +747,19 @@ class Pos extends Page
 
     public function getEligibleSubtotalForPromotion(Promotion $promotion): float
     {
-        $eligibleServiceIds = $promotion->services->pluck('id')->toArray();
+        $eligibleCategoryIds = $promotion->categories->pluck('id')->toArray();
 
-        return (float) array_reduce($this->cart, function ($carry, $item) use ($eligibleServiceIds) {
+        return (float) array_reduce($this->cart, function ($carry, $item) use ($eligibleCategoryIds) {
             if ($item['type'] !== 'service') {
                 return $carry;
             }
 
-            // If specific services defined for promo, only discount those services
-            if (! empty($eligibleServiceIds) && ! in_array((int) $item['itemId'], $eligibleServiceIds, true)) {
-                return $carry;
+            // If specific categories defined for promo, only discount services belonging to those categories
+            if (! empty($eligibleCategoryIds)) {
+                $categoryId = $item['categoryId'] ?? Service::find($item['itemId'])?->categoryId;
+                if (! $categoryId || ! in_array((int) $categoryId, $eligibleCategoryIds, true)) {
+                    return $carry;
+                }
             }
 
             return $carry + ($item['unitPrice'] * $item['quantity']);
@@ -766,7 +772,7 @@ class Pos extends Page
         $discountVal = is_numeric($this->discountValue) ? (float) $this->discountValue : 0;
 
         if ($this->selectedPromotionId) {
-            $promotion = Promotion::with('services')->find($this->selectedPromotionId);
+            $promotion = Promotion::with('categories')->find($this->selectedPromotionId);
             if ($promotion && $promotion->isActive()) {
                 $eligibleSubtotal = $this->getEligibleSubtotalForPromotion($promotion);
 
@@ -779,11 +785,12 @@ class Pos extends Page
                 }
 
                 if ($promotion->type === 'free_service') {
-                    $eligibleServiceIds = $promotion->services->pluck('id')->toArray();
+                    $eligibleCategoryIds = $promotion->categories->pluck('id')->toArray();
                     $freeServicePrice = 0;
                     foreach ($this->cart as $item) {
                         if ($item['type'] === 'service') {
-                            if (empty($eligibleServiceIds) || in_array((int) $item['itemId'], $eligibleServiceIds, true)) {
+                            $categoryId = $item['categoryId'] ?? Service::find($item['itemId'])?->categoryId;
+                            if (empty($eligibleCategoryIds) || ($categoryId && in_array((int) $categoryId, $eligibleCategoryIds, true))) {
                                 $freeServicePrice = max($freeServicePrice, (float) $item['unitPrice']);
                             }
                         }

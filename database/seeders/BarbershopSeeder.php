@@ -13,7 +13,6 @@ use App\Models\Notification;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Promotion;
-use App\Models\PromotionService;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Service;
@@ -1154,16 +1153,8 @@ class BarbershopSeeder extends Seeder
             'status' => 'active',
         ]);
 
-        // Link promotion 3 to coupe services
-        PromotionService::create([
-            'promotionId' => $promo3->id,
-            'serviceId' => $services['coupe_homme']->id,
-        ]);
-
-        PromotionService::create([
-            'promotionId' => $promo3->id,
-            'serviceId' => $services['coupe_enfant']->id,
-        ]);
+        // Link promotion 3 to coiffure category
+        $promo3->categories()->attach($catCoiffure->id);
 
         // ─── Settings ──────────────────────────────────────────────
         $settings = [

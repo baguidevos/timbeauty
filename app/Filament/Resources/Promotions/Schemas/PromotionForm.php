@@ -63,14 +63,14 @@ class PromotionForm
                                     ->hidden(fn (Get $get) => $get('type') === 'free_service')
                                     ->default(10),
 
-                                Select::make('services')
-                                    ->label('Prestations éligibles')
-                                    ->relationship('services', 'name')
+                                Select::make('categories')
+                                    ->label('Catégories de prestations éligibles')
+                                    ->relationship('categories', 'name')
                                     ->multiple()
                                     ->preload()
                                     ->searchable()
-                                    ->placeholder('Toutes les prestations si vide')
-                                    ->helperText('Laissez vide pour appliquer la promotion à l\'ensemble des prestations.')
+                                    ->placeholder('Toutes les catégories de prestations si vide')
+                                    ->helperText('Laissez vide pour appliquer la promotion à l\'ensemble des catégories de prestations.')
                                     ->columnSpanFull(),
 
                                 DatePicker::make('startDate')

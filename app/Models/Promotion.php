@@ -7,6 +7,8 @@ use App\Traits\LogsActivity;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Promotion extends Model
 {
@@ -39,12 +41,17 @@ class Promotion extends Model
         ];
     }
 
-    public function services()
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(ServiceCategory::class, 'promotion_service_categories', 'promotionId', 'categoryId');
+    }
+
+    public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'promotion_services', 'promotionId', 'serviceId');
     }
 
-    public function promotionServices()
+    public function promotionServices(): HasMany
     {
         return $this->hasMany(PromotionService::class, 'promotionId');
     }
