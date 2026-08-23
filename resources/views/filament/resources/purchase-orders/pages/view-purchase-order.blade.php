@@ -508,28 +508,57 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 10mm 12mm;
+                margin: 8mm 10mm;
             }
-            body {
-                background: #ffffff !important;
-                color: #000000 !important;
-            }
+
+            /* 1. Hide default page elements */
             body * {
                 visibility: hidden;
             }
-            #purchase-order-printable, #purchase-order-printable * {
-                visibility: visible;
-            }
-            #purchase-order-printable {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            .fi-page, .fi-page-header, .fi-sidebar, .fi-topbar, .fi-header-actions, .fi-breadcrumbs, button {
+
+            /* 2. Hide Filament shell components */
+            .fi-sidebar,
+            .fi-topbar,
+            .fi-breadcrumbs,
+            .fi-header-actions,
+            .fi-modal,
+            button {
                 display: none !important;
+            }
+
+            /* 3. Keep layout containers visible so children can be visible */
+            html,
+            body,
+            .fi-layout,
+            .fi-main,
+            .fi-page,
+            .fi-section {
+                visibility: visible !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            /* 4. Display the printable purchase order */
+            #purchase-order-printable,
+            #purchase-order-printable * {
+                visibility: visible !important;
+            }
+
+            #purchase-order-printable {
+                display: block !important;
+                position: relative !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                color: #000000 !important;
             }
         }
     </style>
