@@ -161,7 +161,7 @@ it('can update discount values without errors', function () {
 it('can create quick client directly in POS', function () {
     $this->actingAs($this->admin);
 
-    Livewire::test(Pos::class)
+    $test = Livewire::test(Pos::class)
         ->set('quickClientFirstName', 'Koffi')
         ->set('quickClientLastName', 'Agbeko')
         ->set('quickClientPhone', '+228 99 88 77 66')
@@ -172,6 +172,73 @@ it('can create quick client directly in POS', function () {
     $newClient = Client::where('phone', '+228 99 88 77 66')->first();
     expect($newClient)->not->toBeNull()
         ->and($newClient->firstName)->toBe('Koffi');
+
+    $test->assertSet('clientId', $newClient->id);
+
+    // If calling with same phone again, it seamlessly selects the existing client
+    Livewire::test(Pos::class)
+        ->set('quickClientFirstName', 'Koffi Duplicate')
+        ->set('quickClientLastName', 'Agbeko')
+        ->set('quickClientPhone', '+228 99 88 77 66')
+        ->call('createQuickClient')
+        ->assertHasNoErrors()
+        ->assertSet('clientId', $newClient->id);
+});
+
+it('requires a client when services are in cart before checkout', function () {
+    $this->actingAs($this->admin);
+
+    // Cart with a service, but NO client selected -> Must fail with clientId error
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->set('barberId', $this->barber->id)
+        ->set('clientId', null)
+        ->call('processSale')
+        ->assertHasErrors(['clientId'])
+        ->assertSet('cart', fn ($cart) => count($cart) > 0);
+
+    // Once client is set -> Checkout succeeds
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->set('barberId', $this->barber->id)
+        ->set('clientId', $this->client->id)
+        ->call('processSale')
+        ->assertHasNoErrors()
+        ->assertSet('showReceiptModal', true);
+});
+
+it('requires a barber when services are in cart before checkout', function () {
+    $this->actingAs($this->admin);
+
+    // Cart with a service, but NO barber selected -> Must fail
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->set('clientId', $this->client->id)
+        ->set('barberId', null)
+        ->call('processSale')
+        ->assertHasErrors(['barberId'])
+        ->assertSet('cart', fn ($cart) => count($cart) > 0);
+
+    // Once barber is set -> Checkout succeeds
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'service', $this->service->id)
+        ->set('clientId', $this->client->id)
+        ->set('barberId', $this->barber->id)
+        ->call('processSale')
+        ->assertHasNoErrors()
+        ->assertSet('showReceiptModal', true);
+});
+
+it('allows checkout without barber when only products are in cart', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(Pos::class)
+        ->call('addToCart', 'product', $this->product->id)
+        ->set('clientId', null)
+        ->set('barberId', null)
+        ->call('processSale')
+        ->assertHasNoErrors()
+        ->assertSet('showReceiptModal', true);
 });
 
 it('can process sale, decrement product stock and clear session cart', function () {
@@ -272,6 +339,7 @@ it('can select an active promotion in POS, calculate discount, and record usage 
     Livewire::test(Pos::class)
         ->call('addToCart', 'service', $this->service->id) // 3500 FCFA
         ->set('clientId', $this->client->id)
+        ->set('barberId', $this->barber->id)
         ->call('applyPromotion', $promo->id)
         ->assertSet('selectedPromotionId', $promo->id)
         ->assertSet('discountType', 'percentage')
@@ -343,6 +411,8 @@ it('only applies promotion discount to the specific assigned categories in cart'
 
     // Add Service A (3500 FCFA, Cat A), Service B (5000 FCFA, Cat B), and Product (2000 FCFA) -> Subtotal = 10500 FCFA
     $test = Livewire::test(Pos::class)
+        ->set('clientId', $this->client->id)
+        ->set('barberId', $this->barber->id)
         ->call('addToCart', 'service', $this->service->id)
         ->call('addToCart', 'service', $serviceB->id)
         ->call('addToCart', 'product', $this->product->id)

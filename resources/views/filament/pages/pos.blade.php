@@ -432,30 +432,46 @@
                             @endif
                         @endif
 
+                        @php
+                            $hasServicesInCart = $this->hasServicesInCart();
+                        @endphp
+
                         <!-- ─── Sélection Client ────────────────────────── -->
                         <div class="space-y-1.5">
                             <div class="flex items-center justify-between">
                                 <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                    <x-heroicon-m-user class="h-3.5 w-3.5 text-amber-500" /> Client
+                                    <x-heroicon-m-user class="h-3.5 w-3.5 text-amber-500" />
+                                    Client
+                                    @if($hasServicesInCart)
+                                        <span class="text-rose-500 font-bold" title="Obligatoire pour les prestations">*</span>
+                                    @endif
                                 </label>
-                                <x-filament::button
-                                    x-on:click="$dispatch('open-modal', { id: 'quick-client-modal' })"
-                                    type="button"
-                                    color="warning"
-                                    icon="heroicon-m-user-plus"
-                                    size="xs"
-                                    outlined
-                                >
-                                    Nouveau client
-                                </x-filament::button>
+                                <div class="flex items-center gap-2">
+                                    @if($hasServicesInCart && ! $clientId)
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800 animate-pulse">
+                                            <x-heroicon-m-exclamation-triangle class="h-3 w-3" />
+                                            Requis pour prestation
+                                        </span>
+                                    @endif
+                                    <x-filament::button
+                                        x-on:click="$dispatch('open-modal', { id: 'quick-client-modal' })"
+                                        type="button"
+                                        color="warning"
+                                        icon="heroicon-m-user-plus"
+                                        size="xs"
+                                        outlined
+                                    >
+                                        Nouveau client
+                                    </x-filament::button>
+                                </div>
                             </div>
 
-                            <x-filament::input.wrapper>
+                            <x-filament::input.wrapper :valid="! $errors->has('clientId')">
                                 <x-filament::input.select
                                     id="pos-client-select"
                                     wire:model.live="clientId"
                                 >
-                                    <option value="">👤 Client sans rendez-vous (Walk-in)</option>
+                                    <option value="">👤 {{ $hasServicesInCart ? 'Veuillez sélectionner ou créer un client...' : 'Client sans rendez-vous (Walk-in)' }}</option>
                                     @foreach($clients as $c)
                                         <option value="{{ $c->id }}">
                                             {{ $c->getFullName() }} ({{ $c->phone }})
@@ -463,17 +479,35 @@
                                     @endforeach
                                 </x-filament::input.select>
                             </x-filament::input.wrapper>
+                            @error('clientId')
+                                <p class="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/40 p-2 rounded-lg border border-rose-200 dark:border-rose-800/80">
+                                    <x-heroicon-m-exclamation-circle class="h-4 w-4 shrink-0 text-rose-500" />
+                                    {{ $message }}
+                                </p>
+                            @enderror
                         </div>
 
                         <!-- ─── Sélection Coiffeur ─────────────────────── -->
                         <div class="space-y-1.5">
-                            <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                <x-heroicon-m-scissors class="h-3.5 w-3.5 text-amber-500" /> Coiffeur / Barbier assigné
-                            </label>
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                    <x-heroicon-m-scissors class="h-3.5 w-3.5 text-amber-500" />
+                                    Coiffeur / Barbier assigné
+                                    @if($hasServicesInCart)
+                                        <span class="text-rose-500 font-bold" title="Obligatoire pour les prestations">*</span>
+                                    @endif
+                                </label>
+                                @if($hasServicesInCart && ! $barberId)
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800 animate-pulse">
+                                        <x-heroicon-m-exclamation-triangle class="h-3 w-3" />
+                                        Requis pour prestation
+                                    </span>
+                                @endif
+                            </div>
                             
-                            <x-filament::input.wrapper>
+                            <x-filament::input.wrapper :valid="! $errors->has('barberId')">
                                 <x-filament::input.select wire:model.live="barberId">
-                                    <option value="">✂️ Aucun coiffeur assigné</option>
+                                    <option value="">✂️ {{ $hasServicesInCart ? 'Veuillez sélectionner un coiffeur...' : 'Aucun coiffeur assigné' }}</option>
                                     @foreach($barbers as $barber)
                                         @php
                                             $avail = $this->getBarberAvailability($barber->id);
@@ -484,6 +518,12 @@
                                     @endforeach
                                 </x-filament::input.select>
                             </x-filament::input.wrapper>
+                            @error('barberId')
+                                <p class="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/40 p-2 rounded-lg border border-rose-200 dark:border-rose-800/80">
+                                    <x-heroicon-m-exclamation-circle class="h-4 w-4 shrink-0 text-rose-500" />
+                                    {{ $message }}
+                                </p>
+                            @enderror
 
                             @if($barberId)
                                 @php
@@ -701,6 +741,21 @@
                             </div>
                         </div>
 
+                        <!-- ─── Erreurs de validation POS ───────────────── -->
+                        @if($errors->any())
+                            <div class="rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 space-y-1">
+                                <div class="font-bold flex items-center gap-1.5">
+                                    <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-rose-500 shrink-0" />
+                                    <span>Veuillez corriger les points suivants :</span>
+                                </div>
+                                <ul class="list-disc list-inside space-y-0.5 text-[11px] pl-1 font-medium">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
                         <!-- ─── Bouton d'Encaissement Filament ──────────── -->
                         <x-filament::button
                             wire:click="processSale"
@@ -726,18 +781,20 @@
             icon-color="warning"
         >
             <x-slot name="heading">
-                Nouveau client sans rendez-vous
+                Nouveau Client Express (Walk-in)
             </x-slot>
 
             <x-slot name="description">
-                Enregistrez rapidement les coordonnées du client walk-in.
+                Enregistrez rapidement les coordonnées du client et associez-le au panier.
             </x-slot>
 
-            <form wire:submit.prevent="createQuickClient" id="quickClientForm" class="space-y-4">
+            <form wire:submit="createQuickClient" id="quickClientForm" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div class="space-y-1">
-                        <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">Prénom *</label>
-                        <x-filament::input.wrapper>
+                        <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            Prénom <span class="text-rose-500">*</span>
+                        </label>
+                        <x-filament::input.wrapper :valid="! $errors->has('quickClientFirstName')">
                             <x-filament::input
                                 wire:model="quickClientFirstName"
                                 type="text"
@@ -749,8 +806,10 @@
                     </div>
 
                     <div class="space-y-1">
-                        <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">Nom *</label>
-                        <x-filament::input.wrapper>
+                        <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            Nom <span class="text-rose-500">*</span>
+                        </label>
+                        <x-filament::input.wrapper :valid="! $errors->has('quickClientLastName')">
                             <x-filament::input
                                 wire:model="quickClientLastName"
                                 type="text"
@@ -763,16 +822,32 @@
                 </div>
 
                 <div class="space-y-1">
-                    <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">Numéro de téléphone *</label>
-                    <x-filament::input.wrapper prefix-icon="heroicon-m-phone">
+                    <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        Numéro de téléphone <span class="text-rose-500">*</span>
+                    </label>
+                    <x-filament::input.wrapper :valid="! $errors->has('quickClientPhone')" prefix-icon="heroicon-m-phone">
                         <x-filament::input
                             wire:model="quickClientPhone"
-                            type="text"
+                            type="tel"
                             required
                             placeholder="ex: +228 90 12 34 56"
                         />
                     </x-filament::input.wrapper>
                     @error('quickClientPhone') <span class="text-[10px] text-rose-500">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">Genre</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-800 p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 transition">
+                            <input type="radio" wire:model="quickClientGender" value="male" class="text-amber-500 focus:ring-amber-500">
+                            <span class="text-xs font-medium text-gray-800 dark:text-gray-200">Homme</span>
+                        </label>
+                        <label class="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-800 p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 transition">
+                            <input type="radio" wire:model="quickClientGender" value="female" class="text-amber-500 focus:ring-amber-500">
+                            <span class="text-xs font-medium text-gray-800 dark:text-gray-200">Femme</span>
+                        </label>
+                    </div>
                 </div>
             </form>
 
@@ -786,9 +861,12 @@
                 </x-filament::button>
 
                 <x-filament::button
+                    wire:click="createQuickClient"
                     type="submit"
                     form="quickClientForm"
                     color="warning"
+                    icon="heroicon-m-check"
+                    wire:loading.attr="disabled"
                 >
                     Enregistrer et sélectionner
                 </x-filament::button>

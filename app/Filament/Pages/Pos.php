@@ -515,34 +515,50 @@ class Pos extends Page
         ], [
             'quickClientFirstName.required' => 'Le prénom est requis.',
             'quickClientLastName.required' => 'Le nom est requis.',
-            'quickClientPhone.required' => 'Le téléphone est requis.',
+            'quickClientPhone.required' => 'Le numéro de téléphone est requis.',
         ]);
 
-        $client = Client::create([
-            'firstName' => trim($this->quickClientFirstName),
-            'lastName' => trim($this->quickClientLastName),
-            'phone' => trim($this->quickClientPhone),
-            'gender' => $this->quickClientGender ?? 'male',
-            'firstVisitDate' => now()->toDateString(),
-            'lastVisitDate' => now()->toDateString(),
-            'totalVisits' => 0,
-            'totalSpent' => 0,
-        ]);
+        $phone = trim($this->quickClientPhone);
+        $client = Client::where('phone', $phone)->first();
 
-        $this->clientId = $client->id;
-        $this->quickClientFirstName = '';
-        $this->quickClientLastName = '';
-        $this->quickClientPhone = '';
+        if ($client) {
+            $this->clientId = $client->id;
+            Notification::make()
+                ->title('Client existant retrouvé ('.$client->getFullName().') et sélectionné !')
+                ->info()
+                ->send();
+        } else {
+            $client = Client::create([
+                'firstName' => trim($this->quickClientFirstName),
+                'lastName' => trim($this->quickClientLastName),
+                'phone' => $phone,
+                'gender' => $this->quickClientGender ?? 'male',
+                'firstVisitDate' => now()->toDateString(),
+                'lastVisitDate' => now()->toDateString(),
+                'totalVisits' => 0,
+                'totalSpent' => 0,
+            ]);
+
+            $this->clientId = $client->id;
+
+            Notification::make()
+                ->title('Client '.$client->getFullName().' créé et sélectionné !')
+                ->success()
+                ->send();
+        }
+
+        $this->reset(['quickClientFirstName', 'quickClientLastName', 'quickClientPhone']);
+        $this->quickClientGender = 'male';
         $this->showQuickClientModal = false;
         $this->clientSearch = '';
 
         $this->saveCartToSession();
         $this->dispatch('close-modal', id: 'quick-client-modal');
+    }
 
-        Notification::make()
-            ->title('Client '.$client->getFullName().' créé et sélectionné !')
-            ->success()
-            ->send();
+    public function hasServicesInCart(): bool
+    {
+        return collect($this->cart)->contains('type', 'service');
     }
 
     /**
@@ -550,9 +566,37 @@ class Pos extends Page
      */
     public function processSale(): void
     {
+        $this->resetErrorBag();
+
         if (empty($this->cart)) {
+            $this->addError('cart', 'Le panier est vide. Veuillez ajouter au moins un article.');
             Notification::make()
                 ->title('Le panier est vide')
+                ->body('Veuillez ajouter au moins une prestation ou un produit avant d\'encaisser.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        // Validate mandatory client selection when services are present in cart
+        if ($this->hasServicesInCart() && empty($this->clientId)) {
+            $this->addError('clientId', 'Veuillez obligatoirement sélectionner ou créer un client pour réaliser la prestation.');
+            Notification::make()
+                ->title('Client obligatoire')
+                ->body('Une ou plusieurs prestations sont dans le panier. Veuillez obligatoirement sélectionner ou créer un client avant d\'encaisser.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        // Validate mandatory barber assignment when services are present in cart
+        if ($this->hasServicesInCart() && empty($this->barberId)) {
+            $this->addError('barberId', 'Veuillez obligatoirement sélectionner un coiffeur pour réaliser la ou les prestations.');
+            Notification::make()
+                ->title('Coiffeur obligatoire')
+                ->body('Une ou plusieurs prestations sont dans le panier. Vous devez obligatoirement assigner un coiffeur avant d\'encaisser.')
                 ->danger()
                 ->send();
 
@@ -564,6 +608,7 @@ class Pos extends Page
             if ($item['type'] === 'product') {
                 $product = Product::find($item['itemId']);
                 if (! $product || $product->stockQuantity < $item['quantity']) {
+                    $this->addError('stock', 'Stock insuffisant pour '.$item['name']);
                     Notification::make()
                         ->title('Stock insuffisant pour '.$item['name'])
                         ->danger()
@@ -928,7 +973,16 @@ class Pos extends Page
             });
         }
 
-        return $query->orderBy('firstName')->limit(20)->get();
+        $clients = $query->orderBy('firstName')->limit(50)->get();
+
+        if ($this->clientId && ! $clients->contains('id', (int) $this->clientId)) {
+            $selected = Client::find($this->clientId);
+            if ($selected) {
+                $clients->prepend($selected);
+            }
+        }
+
+        return $clients;
     }
 
     public function getBarbers(): Collection
