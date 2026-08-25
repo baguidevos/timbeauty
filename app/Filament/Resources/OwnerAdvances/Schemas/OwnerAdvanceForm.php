@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\OwnerAdvances\Schemas;
 
+use App\Models\CashRegister;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -23,7 +24,13 @@ class OwnerAdvanceForm
 
                 Select::make('cashRegisterId')
                     ->label('Session de Caisse associée')
-                    ->relationship('cashRegister', 'id')
+                    ->relationship(
+                        name: 'cashRegister',
+                        titleAttribute: 'id',
+                        modifyQueryUsing: fn ($query) => $query->latest('openedAt')
+                    )
+                    ->getOptionLabelFromRecordUsing(fn (CashRegister $record): string => ($record->isOpen() ? '🟢 ' : '🔴 ')."Caisse #{$record->id} — ".($record->openedAt ? $record->openedAt->format('d/m/Y à H:i') : $record->created_at->format('d/m/Y')).' ('.($record->isOpen() ? 'Ouverte' : 'Fermée').')'
+                    )
                     ->placeholder('Aucune session (Apport hors caisse)')
                     ->searchable()
                     ->preload(),
