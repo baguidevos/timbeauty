@@ -122,12 +122,22 @@ it('can mark purchase order as ordered and receive stock updating inventory and 
         'record' => $this->purchaseOrder->getRouteKey(),
     ]);
 
-    // 1. Mark as Ordered
-    $component->callAction('markAsOrdered');
-    expect($this->purchaseOrder->fresh()->status)->toBe('ordered');
+    // 1. Mark as Ordered with optional advance deposit (+10 000 FCFA)
+    $component->callAction('markAsOrdered', [
+        'record_payment' => true,
+        'payment_mode' => 'partial',
+        'amount' => 10000,
+    ]);
+    expect($this->purchaseOrder->fresh()->status)->toBe('ordered')
+        ->and((float) $this->purchaseOrder->fresh()->paidAmount)->toBe(30000.0); // 20 000 initial + 10 000 = 30 000
 
-    // 2. Receive Order & Update Stock
-    $component->callAction('receiveOrder');
+    // 2. Receive Order & Update Stock with full settlement (+30 000 FCFA)
+    $component->callAction('receiveOrder', [
+        'is_conforming' => true,
+        'record_payment' => true,
+        'payment_mode' => 'full',
+        'amount' => 30000,
+    ]);
 
     $freshOrder = $this->purchaseOrder->fresh();
     $freshProduct = $this->product->fresh();
@@ -136,7 +146,9 @@ it('can mark purchase order as ordered and receive stock updating inventory and 
     expect($freshOrder->status)->toBe('received')
         ->and($freshOrder->receivedDate)->not->toBeNull()
         ->and($freshItem->receivedQuantity)->toBe(20)
-        ->and($freshProduct->stockQuantity)->toBe($initialStock + 20); // 5 + 20 = 25
+        ->and($freshProduct->stockQuantity)->toBe($initialStock + 20) // 5 + 20 = 25
+        ->and((float) $freshOrder->paidAmount)->toBe(60000.0)
+        ->and($freshOrder->isFullyPaid())->toBeTrue();
 
     // Verify StockMovement entry
     $movement = StockMovement::where('productId', $this->product->id)
