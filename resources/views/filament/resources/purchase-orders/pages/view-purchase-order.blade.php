@@ -89,7 +89,7 @@
                         <!-- Informations Fournisseur & Dates -->
                         <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-500 dark:text-gray-400">
                             @if($supplier)
-                                <a href="{{ route('filament.admin.order-management.resources.suppliers.view', ['record' => $supplier->id]) }}" class="flex items-center gap-1.5 font-bold text-amber-600 hover:underline dark:text-amber-400">
+                                <a href="{{ \App\Filament\Resources\Suppliers\SupplierResource::getUrl('view', ['record' => $supplier->id]) }}" class="flex items-center gap-1.5 font-bold text-amber-600 hover:underline dark:text-amber-400">
                                     <x-heroicon-m-truck class="h-4 w-4" />
                                     <span>Fournisseur : {{ $supplier->name }}</span>
                                 </a>

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RevenueTargets;
 
+use App\Filament\Clusters\FinanceCluster;
 use App\Filament\Resources\RevenueTargets\Schemas\RevenueTargetForm;
 use App\Filament\Resources\RevenueTargets\Tables\RevenueTargetsTable;
 use App\Models\RevenueTarget;
@@ -13,13 +14,13 @@ class RevenueTargetResource extends Resource
 {
     protected static ?string $model = RevenueTarget::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-presentation-chart-line';
+    protected static ?string $cluster = FinanceCluster::class;
 
-    protected static ?string $navigationLabel = 'Objectifs';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-flag';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static ?string $navigationLabel = 'Objectifs Financiers';
 
-    protected static ?int $navigationSort = 25;
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $modelLabel = 'Objectif de revenu';
 

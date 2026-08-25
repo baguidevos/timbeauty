@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Barbers;
 
+use App\Filament\Clusters\HumanResources;
 use App\Filament\Resources\Barbers\RelationManagers\AbsencesRelationManager;
 use App\Filament\Resources\Barbers\RelationManagers\SchedulesRelationManager;
 use App\Filament\Resources\Barbers\Schemas\BarberForm;
@@ -9,20 +10,19 @@ use App\Filament\Resources\Barbers\Tables\BarbersTable;
 use App\Models\Barber;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class BarberResource extends Resource
 {
     protected static ?string $model = Barber::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
+    protected static ?string $cluster = HumanResources::class;
 
-    protected static ?string $navigationLabel = 'Personnel';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Gestion';
+    protected static ?string $navigationLabel = 'Personnel & Barbiers';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $modelLabel = 'Membre du personnel';
 

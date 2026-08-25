@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Services;
 
+use App\Filament\Clusters\CatalogCluster;
 use App\Filament\Resources\Services\Schemas\ServiceForm;
 use App\Filament\Resources\Services\Tables\ServicesTable;
 use App\Models\Service;
@@ -13,11 +14,13 @@ class ServiceResource extends Resource
 {
     protected static ?string $model = Service::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-sparkles';
+    protected static ?string $cluster = CatalogCluster::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Gestion';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-scissors';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationLabel = 'Prestations';
 
     protected static ?string $modelLabel = 'Prestation';
 

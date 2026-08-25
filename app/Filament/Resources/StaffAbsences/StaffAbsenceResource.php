@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\StaffAbsences;
 
-use App\Filament\Clusters\StaffPlanning;
+use App\Filament\Clusters\HumanResources;
 use App\Filament\Resources\StaffAbsences\Schemas\StaffAbsenceForm;
 use App\Filament\Resources\StaffAbsences\Tables\StaffAbsencesTable;
 use App\Models\StaffAbsence;
@@ -14,13 +14,13 @@ class StaffAbsenceResource extends Resource
 {
     protected static ?string $model = StaffAbsence::class;
 
-    protected static ?string $cluster = StaffPlanning::class;
+    protected static ?string $cluster = HumanResources::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-sun';
 
     protected static ?string $navigationLabel = 'Congés & Absences';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $modelLabel = 'Absence / Congé';
 

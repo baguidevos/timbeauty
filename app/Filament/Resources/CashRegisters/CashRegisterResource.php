@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CashRegisters;
 
+use App\Filament\Clusters\FinanceCluster;
 use App\Filament\Resources\CashRegisters\Schemas\CashRegisterForm;
 use App\Filament\Resources\CashRegisters\Tables\CashRegistersTable;
 use App\Models\CashRegister;
@@ -13,15 +14,17 @@ class CashRegisterResource extends Resource
 {
     protected static ?string $model = CashRegister::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-wallet';
+    protected static ?string $cluster = FinanceCluster::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Ventes';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calculator';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 1;
 
-    protected static ?string $modelLabel = 'Caisse';
+    protected static ?string $navigationLabel = 'Sessions de Caisse';
 
-    protected static ?string $pluralModelLabel = 'Caisses';
+    protected static ?string $modelLabel = 'Session de Caisse';
+
+    protected static ?string $pluralModelLabel = 'Sessions de Caisse';
 
     public static function form(Schema $schema): Schema
     {

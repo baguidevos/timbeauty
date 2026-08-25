@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products;
 
+use App\Filament\Clusters\CatalogCluster;
 use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Models\Product;
@@ -13,11 +14,13 @@ class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cube';
+    protected static ?string $cluster = CatalogCluster::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Ventes';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-shopping-bag';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationLabel = 'Produits & Stock';
 
     protected static ?string $modelLabel = 'Produit';
 

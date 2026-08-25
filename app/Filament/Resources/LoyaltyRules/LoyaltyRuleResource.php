@@ -16,11 +16,11 @@ class LoyaltyRuleResource extends Resource
 
     protected static ?string $cluster = Marketing::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-gift';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog';
 
-    protected static ?string $navigationLabel = 'Programme de Fidélité';
+    protected static ?string $navigationLabel = 'Règles de Points';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
 
     protected static ?string $modelLabel = 'Règle de fidélité';
 
