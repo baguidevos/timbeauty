@@ -62,6 +62,28 @@
                             <x-filament::badge :color="$badgeColor" :icon="$badgeIcon" size="sm">
                                 {{ $badgeLabel }}
                             </x-filament::badge>
+
+                            @php
+                                $paymentBadgeColor = match($order->payment_status) {
+                                    'paid' => 'success',
+                                    'partially_paid' => 'warning',
+                                    default => 'danger',
+                                };
+                                $paymentBadgeLabel = match($order->payment_status) {
+                                    'paid' => 'Payée (100%)',
+                                    'partially_paid' => 'Réglée à ' . $order->payment_percentage . '%',
+                                    default => 'Non payée',
+                                };
+                                $paymentBadgeIcon = match($order->payment_status) {
+                                    'paid' => 'heroicon-m-check-badge',
+                                    'partially_paid' => 'heroicon-m-clock',
+                                    default => 'heroicon-m-exclamation-circle',
+                                };
+                            @endphp
+
+                            <x-filament::badge :color="$paymentBadgeColor" :icon="$paymentBadgeIcon" size="sm">
+                                {{ $paymentBadgeLabel }}
+                            </x-filament::badge>
                         </div>
 
                         <!-- Informations Fournisseur & Dates -->
@@ -97,6 +119,16 @@
 
                 <!-- Boutons d'action rapide -->
                 <div class="flex items-center gap-2 flex-wrap">
+                    @if(!$order->isFullyPaid() && !$order->isCancelled())
+                        <button 
+                            type="button"
+                            wire:click="mountAction('recordPayment')" 
+                            class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700 shadow-xs hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-900/50 transition cursor-pointer">
+                            <x-heroicon-o-banknotes class="h-4 w-4 text-emerald-600" />
+                            <span>Régler / Acompte</span>
+                        </button>
+                    @endif
+
                     <button 
                         type="button"
                         onclick="window.print()" 
@@ -199,11 +231,20 @@
                     </div>
                 </div>
                 <div class="mt-3">
-                    <p class="text-xl font-black text-emerald-600 dark:text-emerald-400">
-                        {{ \App\Helpers\FormatHelper::formatFCFA($stats['paidAmount']) }}
-                    </p>
-                    <p class="text-[11px] text-gray-400 mt-0.5">
-                        Acompte / règlement fournisseur
+                    <div class="flex items-baseline justify-between">
+                        <p class="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                            {{ \App\Helpers\FormatHelper::formatFCFA($stats['paidAmount']) }}
+                        </p>
+                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            {{ $order->payment_percentage }}%
+                        </span>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                        <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500" style="width: {{ $order->payment_percentage }}%"></div>
+                    </div>
+                    <p class="text-[11px] text-gray-400 mt-1.5">
+                        {{ $order->isFullyPaid() ? 'Règlement 100% complété' : ($order->isPartiallyPaid() ? 'Acompte partiel versé' : 'Aucun versement effectué') }}
                     </p>
                 </div>
             </div>
@@ -217,11 +258,21 @@
                     </div>
                 </div>
                 <div class="mt-3">
-                    <p class="text-xl font-black {{ $stats['remainingAmount'] > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-950 dark:text-white' }}">
-                        {{ \App\Helpers\FormatHelper::formatFCFA($stats['remainingAmount']) }}
-                    </p>
+                    <div class="flex items-center justify-between">
+                        <p class="text-xl font-black {{ $stats['remainingAmount'] > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-950 dark:text-white' }}">
+                            {{ \App\Helpers\FormatHelper::formatFCFA($stats['remainingAmount']) }}
+                        </p>
+                        @if($stats['remainingAmount'] > 0 && !$order->isCancelled())
+                            <button 
+                                type="button"
+                                wire:click="mountAction('recordPayment')"
+                                class="text-[11px] font-bold text-amber-600 hover:text-amber-700 dark:text-amber-400 hover:underline cursor-pointer">
+                                Payer +
+                            </button>
+                        @endif
+                    </div>
                     <p class="text-[11px] text-gray-400 mt-0.5">
-                        {{ $stats['remainingAmount'] > 0 ? 'À régler à réception' : 'Totalement soldé' }}
+                        {{ $stats['remainingAmount'] > 0 ? 'À régler au fournisseur' : 'Totalement soldé' }}
                     </p>
                 </div>
             </div>

@@ -48,6 +48,56 @@ class PurchaseOrder extends Model
         return $this->hasMany(PurchaseOrderItem::class, 'purchaseOrderId');
     }
 
+    public function getRemainingAmountAttribute(): float
+    {
+        return max(0, (float) $this->totalAmount - (float) $this->paidAmount);
+    }
+
+    public function getPaymentStatusAttribute(): string
+    {
+        if ((float) $this->paidAmount <= 0) {
+            return 'unpaid';
+        }
+
+        if ((float) $this->paidAmount >= (float) $this->totalAmount) {
+            return 'paid';
+        }
+
+        return 'partially_paid';
+    }
+
+    public function getPaymentPercentageAttribute(): int
+    {
+        if ((float) $this->totalAmount <= 0) {
+            return 100;
+        }
+
+        return (int) min(100, round(((float) $this->paidAmount / (float) $this->totalAmount) * 100));
+    }
+
+    public function isFullyPaid(): bool
+    {
+        return $this->payment_status === 'paid';
+    }
+
+    public function isPartiallyPaid(): bool
+    {
+        return $this->payment_status === 'partially_paid';
+    }
+
+    public function isUnpaid(): bool
+    {
+        return $this->payment_status === 'unpaid';
+    }
+
+    public function recordPayment(float $amount): void
+    {
+        $newPaid = (float) $this->paidAmount + $amount;
+        $this->update([
+            'paidAmount' => min((float) $this->totalAmount, max(0, $newPaid)),
+        ]);
+    }
+
     public function isPending(): bool
     {
         return $this->status === 'pending';

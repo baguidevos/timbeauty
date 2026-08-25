@@ -3,16 +3,23 @@
 namespace App\Filament\Resources\PurchaseOrders\Pages;
 
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
+use App\Helpers\FormatHelper;
 use App\Models\StockMovement;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section as FormSection;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Support\Enums\Width;
 use Illuminate\Support\Collection;
+use Illuminate\Support\HtmlString;
 
 class ViewPurchaseOrder extends ViewRecord
 {
@@ -37,6 +44,91 @@ class ViewPurchaseOrder extends ViewRecord
     {
         $order = $this->record;
         $actions = [];
+
+        // 0. Action Régler / Acompte (si pas totalement payée et pas annulée)
+        if (! $order->isFullyPaid() && ! $order->isCancelled()) {
+            $actions[] = Action::make('recordPayment')
+                ->label('Régler / Acompte')
+                ->icon('heroicon-o-banknotes')
+                ->color('success')
+                ->modalWidth(Width::Medium)
+                ->modalHeading("Règlement : {$order->reference}")
+                ->modalDescription('Enregistrez un paiement partiel (acompte) ou le règlement total de la commande.')
+                ->form(function () use ($order): array {
+                    $total = FormatHelper::formatFCFA($order->totalAmount);
+                    $paid = FormatHelper::formatFCFA($order->paidAmount);
+                    $remaining = FormatHelper::formatFCFA($order->remaining_amount);
+                    $pct = $order->payment_percentage;
+
+                    return [
+                        Placeholder::make('payment_summary')
+                            ->hiddenLabel()
+                            ->content(new HtmlString('
+                                <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs dark:border-amber-900/50 dark:bg-amber-950/30">
+                                    <div class="grid grid-cols-3 gap-2 text-center">
+                                        <div>
+                                            <span class="text-[10px] text-gray-500 uppercase dark:text-gray-400">Total</span>
+                                            <div class="font-bold text-gray-900 dark:text-white">'.$total.'</div>
+                                        </div>
+                                        <div>
+                                            <span class="text-[10px] text-gray-500 uppercase dark:text-gray-400">Déjà réglé</span>
+                                            <div class="font-bold text-emerald-600 dark:text-emerald-400">'.$paid.' ('.$pct.'%)</div>
+                                        </div>
+                                        <div>
+                                            <span class="text-[10px] text-gray-500 uppercase dark:text-gray-400">Reste dû</span>
+                                            <div class="font-extrabold text-rose-600 dark:text-rose-400">'.$remaining.'</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ')),
+
+                        Radio::make('payment_mode')
+                            ->label('Option de paiement')
+                            ->options([
+                                'full' => 'Solder la totalité du reste dû ('.FormatHelper::formatFCFA($order->remaining_amount).')',
+                                'partial' => 'Verser un acompte / montant spécifique',
+                            ])
+                            ->default('full')
+                            ->live()
+                            ->afterStateUpdated(function ($state, Set $set) use ($order) {
+                                if ($state === 'full') {
+                                    $set('amount', $order->remaining_amount);
+                                }
+                            }),
+
+                        TextInput::make('amount')
+                            ->label('Montant du versement (FCFA)')
+                            ->numeric()
+                            ->required()
+                            ->minValue(1)
+                            ->maxValue($order->remaining_amount)
+                            ->default($order->remaining_amount)
+                            ->disabled(fn (Get $get): bool => $get('payment_mode') === 'full')
+                            ->dehydrated()
+                            ->helperText('Montant à ajouter au cumul des paiements.'),
+
+                        Textarea::make('notes')
+                            ->label('Référence de paiement / Notes')
+                            ->placeholder('Ex: Virement bancaire réf #12345, Espèces remises au livreur...')
+                            ->rows(2),
+                    ];
+                })
+                ->action(function (array $data): void {
+                    $order = $this->record;
+                    $amountToAdd = (float) $data['amount'];
+                    $order->recordPayment($amountToAdd);
+                    $this->record = $order->fresh(['items.product', 'supplier', 'creator']);
+
+                    $fresh = $this->record;
+                    $statusText = $fresh->isFullyPaid() ? 'Commande totalement soldée (100%)' : 'Reste dû : '.FormatHelper::formatFCFA($fresh->remaining_amount);
+
+                    Notification::make()
+                        ->title('Paiement enregistré avec succès')
+                        ->body('+'.FormatHelper::formatFCFA($amountToAdd)." versés. {$statusText}")
+                        ->success()
+                        ->send();
+                });
+        }
 
         // 1. Mark as Ordered (if pending)
         if ($order->status === 'pending') {

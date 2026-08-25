@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Resources\PurchaseOrders\Pages\ListPurchaseOrders;
 use App\Filament\Resources\PurchaseOrders\Pages\ViewPurchaseOrder;
 use App\Filament\Resources\Suppliers\Pages\ViewSupplier;
 use App\Models\Product;
@@ -145,4 +146,55 @@ it('can mark purchase order as ordered and receive stock updating inventory and 
     expect($movement)->not->toBeNull()
         ->and($movement->type)->toBe('in')
         ->and($movement->quantity)->toBe(20);
+});
+
+it('can record partial and full payments on purchase orders from view page', function () {
+    $this->actingAs($this->admin);
+
+    // Initial state: totalAmount: 60 000, paidAmount: 20 000 => remaining: 40 000
+    expect($this->purchaseOrder->remaining_amount)->toBe(40000.0)
+        ->and($this->purchaseOrder->isPartiallyPaid())->toBeTrue()
+        ->and($this->purchaseOrder->payment_percentage)->toBe(33);
+
+    $component = Livewire::test(ViewPurchaseOrder::class, [
+        'record' => $this->purchaseOrder->getRouteKey(),
+    ]);
+
+    // 1. Partial payment: +15 000 FCFA
+    $component->callAction('recordPayment', [
+        'payment_mode' => 'partial',
+        'amount' => 15000,
+        'notes' => 'Acompte par virement bancaire',
+    ]);
+
+    $fresh = $this->purchaseOrder->fresh();
+    expect((float) $fresh->paidAmount)->toBe(35000.0)
+        ->and($fresh->remaining_amount)->toBe(25000.0)
+        ->and($fresh->isPartiallyPaid())->toBeTrue()
+        ->and($fresh->payment_percentage)->toBe(58);
+
+    // 2. Full remaining payment: +25 000 FCFA
+    $component->callAction('recordPayment', [
+        'payment_mode' => 'full',
+        'amount' => 25000,
+        'notes' => 'Solde par chèque',
+    ]);
+
+    $freshFinal = $this->purchaseOrder->fresh();
+    expect((float) $freshFinal->paidAmount)->toBe(60000.0)
+        ->and($freshFinal->remaining_amount)->toBe(0.0)
+        ->and($freshFinal->isFullyPaid())->toBeTrue()
+        ->and($freshFinal->payment_percentage)->toBe(100);
+});
+
+it('can record payment from purchase orders table action', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(ListPurchaseOrders::class)
+        ->callTableAction('recordPayment', $this->purchaseOrder, [
+            'payment_mode' => 'partial',
+            'amount' => 10000,
+        ]);
+
+    expect((float) $this->purchaseOrder->fresh()->paidAmount)->toBe(30000.0);
 });
