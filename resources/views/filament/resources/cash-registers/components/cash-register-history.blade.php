@@ -63,23 +63,46 @@
             ]);
         }
 
-
-        // 3. Transactions de caisse manuelles (Dépôts / Retraits / Ajustements)
+        // 3. Transactions de caisse manuelles (Avances, Remboursements, Dépôts Banque, Ajustements, etc.)
         foreach ($record->transactions()->whereNotIn('type', ['sale', 'expense'])->with('creator')->get() as $trx) {
-            $isPos = in_array($trx->type, ['deposit', 'adjustment']);
+            $isPos = in_array($trx->type, ['deposit', 'owner_contribution', 'in']);
+            
+            $title = match ($trx->type) {
+                'owner_contribution' => '🟣 Apport / Avance Propriétaire',
+                'owner_refund' => '🟠 Remboursement Avance Propriétaire',
+                'bank_deposit' => '🏦 Dépôt en Banque (Écrémage)',
+                'deposit' => 'Apport / Dépôt de caisse',
+                'withdrawal' => 'Prélèvement / Retrait de caisse',
+                'adjustment' => 'Ajustement de caisse',
+                default => 'Mouvement de caisse',
+            };
+
+            $badgeColor = match ($trx->type) {
+                'owner_contribution' => 'purple',
+                'owner_refund' => 'amber',
+                'bank_deposit' => 'indigo',
+                'deposit' => 'emerald',
+                'withdrawal' => 'rose',
+                default => 'gray',
+            };
+
+            $badgeText = match ($trx->type) {
+                'owner_contribution' => 'Avance Fond',
+                'owner_refund' => 'Remboursement',
+                'bank_deposit' => 'Banque',
+                'deposit' => 'Apport',
+                'withdrawal' => 'Retrait',
+                default => 'Caisse',
+            };
+
             $historyItems->push([
                 'timestamp' => $trx->created_at,
                 'time' => $trx->created_at->format('H:i'),
                 'type' => $trx->type,
-                'title' => match ($trx->type) {
-                    'deposit' => 'Apport / Dépôt de caisse',
-                    'withdrawal' => 'Prélèvement / Retrait de caisse',
-                    'adjustment' => 'Ajustement de caisse',
-                    default => 'Mouvement de caisse',
-                },
-                'badge' => 'Caisse',
-                'badgeColor' => $isPos ? 'emerald' : 'amber',
-                'description' => $trx->description ?: 'Mouvement de fonds',
+                'title' => $title,
+                'badge' => $badgeText,
+                'badgeColor' => $badgeColor,
+                'description' => $trx->description ?: 'Mouvement de trésorerie',
                 'author' => $trx->creator?->name ?? 'Admin',
                 'amount' => (float) $trx->amount,
                 'isPositive' => $isPos,

@@ -50,6 +50,11 @@ class ListCashRegisters extends ListRecords
         ];
     }
 
+    public function getHeaderWidgetsColumns(): int|array
+    {
+        return 1;
+    }
+
     protected function getHeaderActions(): array
     {
         $openRegister = CashRegister::where('status', 'open')->first();

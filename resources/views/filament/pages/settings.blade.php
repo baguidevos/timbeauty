@@ -376,6 +376,64 @@
                         </div>
                     </div>
 
+                    <!-- Paramètres Bancaires & Seuil d'écrémage -->
+                    <div class="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-4">
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                                <x-heroicon-o-building-library class="h-4 w-4 text-amber-500" />
+                                Écrémage de caisse & Compte bancaire du salon
+                            </h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Définissez le seuil de sécurité en caisse à partir duquel une alerte invite à effectuer un versement en banque.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    Seuil d'alerte de versement (FCFA) *
+                                </label>
+                                <x-filament::input.wrapper prefix-icon="heroicon-m-banknotes">
+                                    <x-filament::input
+                                        type="number"
+                                        wire:model="cash_bank_deposit_threshold"
+                                        placeholder="150000"
+                                        required
+                                    />
+                                </x-filament::input.wrapper>
+                                @error('cash_bank_deposit_threshold') <span class="text-xs text-rose-500">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    Banque du salon par défaut
+                                </label>
+                                <x-filament::input.wrapper prefix-icon="heroicon-m-building-library">
+                                    <x-filament::input
+                                        type="text"
+                                        wire:model="default_bank_name"
+                                        placeholder="Ex: Ecobank Togo"
+                                    />
+                                </x-filament::input.wrapper>
+                                @error('default_bank_name') <span class="text-xs text-rose-500">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                    Numéro de compte bancaire
+                                </label>
+                                <x-filament::input.wrapper prefix-icon="heroicon-m-credit-card">
+                                    <x-filament::input
+                                        type="text"
+                                        wire:model="default_bank_account"
+                                        placeholder="Ex: TG001 01234 56789012345 67"
+                                    />
+                                </x-filament::input.wrapper>
+                                @error('default_bank_account') <span class="text-xs text-rose-500">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Options supplémentaires -->
                     <div class="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
                         <div>

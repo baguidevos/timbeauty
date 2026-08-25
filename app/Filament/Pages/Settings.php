@@ -42,12 +42,18 @@ class Settings extends Page
 
     public string $default_closing_time = '20:00';
 
-    // 2. Paramètres de Caisse
+    // 2. Paramètres de Caisse & Banque
     public string $cash_register_mode = 'auto_open';
 
     public array $enabled_payment_methods = ['cash', 'tmoney', 'flooz', 'card', 'transfer'];
 
     public bool $auto_print_receipt = true;
+
+    public string $cash_bank_deposit_threshold = '150000';
+
+    public string $default_bank_name = 'Ecobank Togo';
+
+    public string $default_bank_account = '';
 
     // 3. Programme de Fidélité
     public string $loyalty_visits_threshold = '5';
@@ -90,11 +96,14 @@ class Settings extends Page
         $this->default_opening_time = (string) Setting::get('default_opening_time', Setting::get('business_hours_start', '08:00'));
         $this->default_closing_time = (string) Setting::get('default_closing_time', Setting::get('business_hours_end', '20:00'));
 
-        // Caisse
+        // Caisse & Banque
         $this->cash_register_mode = (string) Setting::get('cash_register_mode', 'auto_open');
         $methodsRaw = Setting::get('payment_methods_enabled', 'cash,tmoney,flooz,card,transfer');
         $this->enabled_payment_methods = array_filter(explode(',', (string) $methodsRaw));
         $this->auto_print_receipt = Setting::get('auto_print_receipt', '1') === '1' || Setting::get('auto_print_receipt', '1') === 'true';
+        $this->cash_bank_deposit_threshold = (string) Setting::get('cash_bank_deposit_threshold', '150000');
+        $this->default_bank_name = (string) Setting::get('default_bank_name', 'Ecobank Togo');
+        $this->default_bank_account = (string) Setting::get('default_bank_account', '');
 
         // Fidélité
         $this->loyalty_visits_threshold = (string) Setting::get('loyalty_visits_threshold', '5');
@@ -161,21 +170,27 @@ class Settings extends Page
         $this->validate([
             'cash_register_mode' => 'required|in:auto_open,strict,flexible',
             'enabled_payment_methods' => 'required|array|min:1',
+            'cash_bank_deposit_threshold' => 'required|numeric|min:0',
+            'default_bank_name' => 'nullable|string|max:100',
+            'default_bank_account' => 'nullable|string|max:100',
         ]);
 
         Setting::set('cash_register_mode', $this->cash_register_mode);
         Setting::set('payment_methods_enabled', implode(',', $this->enabled_payment_methods));
         Setting::set('auto_print_receipt', $this->auto_print_receipt ? '1' : '0');
+        Setting::set('cash_bank_deposit_threshold', $this->cash_bank_deposit_threshold);
+        Setting::set('default_bank_name', $this->default_bank_name);
+        Setting::set('default_bank_account', $this->default_bank_account);
 
         ActivityLog::log(
             action: 'update',
             entity: 'setting',
-            details: 'Mise à jour des paramètres de caisse et moyens de paiement',
+            details: 'Mise à jour des paramètres de caisse et banque',
             userId: auth()->id()
         );
 
         Notification::make()
-            ->title('Paramètres de caisse enregistrés')
+            ->title('Paramètres de caisse et banque enregistrés')
             ->success()
             ->send();
     }

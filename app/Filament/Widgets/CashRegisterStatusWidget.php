@@ -24,9 +24,7 @@ class CashRegisterStatusWidget extends BaseWidget
             ];
         }
 
-        $currentBalance = $openRegister->openingAmount
-            + $openRegister->sales()->sum('total')
-            - $openRegister->expenses()->sum('amount');
+        $currentBalance = $openRegister->getTheoreticalBalance();
 
         $openedBy = $openRegister->opener?->name ?? '—';
 

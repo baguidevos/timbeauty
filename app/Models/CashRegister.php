@@ -50,6 +50,48 @@ class CashRegister extends Model
         return $this->hasMany(Expense::class, 'cashRegisterId');
     }
 
+    public function ownerAdvances()
+    {
+        return $this->hasMany(OwnerAdvance::class, 'cashRegisterId');
+    }
+
+    public function ownerRefunds()
+    {
+        return $this->hasMany(OwnerRefund::class, 'cashRegisterId');
+    }
+
+    public function bankDeposits()
+    {
+        return $this->hasMany(BankDeposit::class, 'cashRegisterId');
+    }
+
+    public function getTheoreticalBalance(): float
+    {
+        $opening = (float) ($this->openingAmount ?? 0);
+        $sales = (float) $this->sales()->where('paymentMethod', 'cash')->sum('total');
+        $expenses = (float) $this->expenses()->where('paymentMethod', 'cash')->sum('amount');
+
+        $extraInflows = (float) $this->transactions()
+            ->whereIn('type', ['deposit', 'owner_contribution', 'in'])
+            ->sum('amount');
+
+        $extraOutflows = (float) $this->transactions()
+            ->whereIn('type', ['withdrawal', 'owner_refund', 'bank_deposit', 'out'])
+            ->sum('amount');
+
+        return $opening + $sales + $extraInflows - $expenses - $extraOutflows;
+    }
+
+    public static function getBankDepositThreshold(): float
+    {
+        return (float) Setting::get('cash_bank_deposit_threshold', 150000);
+    }
+
+    public function isBankDepositThresholdReached(): bool
+    {
+        return $this->getTheoreticalBalance() >= static::getBankDepositThreshold();
+    }
+
     public function isOpen(): bool
     {
         return $this->status === 'open';

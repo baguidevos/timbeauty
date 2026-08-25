@@ -16,7 +16,7 @@ class CashTransactionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'transactions';
 
-    protected static ?string $title = 'Transactions';
+    protected static ?string $title = 'Transactions de caisse';
 
     protected static ?string $recordTitleAttribute = 'id';
 
@@ -25,10 +25,14 @@ class CashTransactionsRelationManager extends RelationManager
         return $schema
             ->schema([
                 Forms\Components\Select::make('type')
-                    ->label('Type')
+                    ->label('Type de mouvement')
                     ->options([
-                        'in' => 'Entrée',
-                        'out' => 'Sortie',
+                        'deposit' => 'Apport / Dépôt de fond',
+                        'withdrawal' => 'Prélèvement / Retrait',
+                        'owner_contribution' => 'Apport / Avance Propriétaire',
+                        'owner_refund' => 'Remboursement Propriétaire',
+                        'bank_deposit' => 'Dépôt en Banque (Écrémage)',
+                        'adjustment' => 'Ajustement inventaire',
                     ])
                     ->required()
                     ->native(false),
@@ -38,10 +42,10 @@ class CashTransactionsRelationManager extends RelationManager
                     ->required()
                     ->minValue(0),
                 Forms\Components\TextInput::make('description')
-                    ->label('Description')
+                    ->label('Description / Motif')
                     ->maxLength(255),
                 Forms\Components\TextInput::make('referenceId')
-                    ->label('Référence')
+                    ->label('Référence / N° Pièce')
                     ->maxLength(50),
             ]);
     }
@@ -53,27 +57,62 @@ class CashTransactionsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->color(fn (string $state): string => $state === 'in' ? 'success' : 'danger')
-                    ->formatStateUsing(fn (string $state): string => $state === 'in' ? 'Entrée' : 'Sortie'),
+                    ->color(fn (string $state): string => match ($state) {
+                        'sale', 'deposit', 'in' => 'success',
+                        'owner_contribution' => 'primary',
+                        'bank_deposit' => 'info',
+                        'owner_refund', 'withdrawal' => 'warning',
+                        'expense', 'out' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'sale' => 'Vente / Encaissement',
+                        'expense' => 'Dépense',
+                        'deposit' => 'Apport de caisse',
+                        'withdrawal' => 'Retrait',
+                        'owner_contribution' => 'Avance Propriétaire',
+                        'owner_refund' => 'Remboursement Proprio',
+                        'bank_deposit' => 'Dépôt en Banque',
+                        'adjustment' => 'Ajustement',
+                        'in' => 'Entrée',
+                        'out' => 'Sortie',
+                        default => $state,
+                    }),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Montant')
                     ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state))
-                    ->alignEnd(),
+                    ->alignEnd()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('description')
                     ->label('Description')
-                    ->limit(30),
+                    ->limit(40)
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('referenceId')
+                    ->label('Réf.')
+                    ->badge()
+                    ->color('gray')
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('creator.name')
-                    ->label('Créé par'),
+                    ->label('Effectué par')
+                    ->placeholder('Système'),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Date')
-                    ->dateTime('d/m/Y H:i'),
+                    ->label('Date & Heure')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable(),
             ])
             ->headerActions([
-                CreateAction::make()->label('Nouvelle transaction'),
+                CreateAction::make()
+                    ->label('Nouveau mouvement')
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $data['createdBy'] = auth()->id();
+
+                        return $data;
+                    }),
             ])
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
-            ]);
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 }
