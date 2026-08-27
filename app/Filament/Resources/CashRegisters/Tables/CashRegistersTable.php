@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CashRegisters\Tables;
 
 use App\Helpers\FormatHelper;
+use App\Models\CashRegister;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -25,6 +26,13 @@ class CashRegistersTable
                     ->label('Ouverture')
                     ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state))
                     ->sortable()
+                    ->alignEnd(),
+                TextColumn::make('current_balance')
+                    ->label('Solde Théorique')
+                    ->state(fn (CashRegister $record) => $record->isOpen() ? $record->getTheoreticalBalance() : ($record->closingAmount ?? $record->getTheoreticalBalance()))
+                    ->formatStateUsing(fn ($state) => FormatHelper::formatFCFA($state ?? 0))
+                    ->color(fn (CashRegister $record) => $record->isOpen() ? 'primary' : 'gray')
+                    ->weight('bold')
                     ->alignEnd(),
                 TextColumn::make('closingAmount')
                     ->label('Clôture')
