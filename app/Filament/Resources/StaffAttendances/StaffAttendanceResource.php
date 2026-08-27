@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\StaffAttendances;
 
-use App\Filament\Clusters\StaffPlanning;
+use App\Filament\Clusters\HumanResources;
 use App\Filament\Resources\StaffAttendances\Schemas\StaffAttendanceForm;
 use App\Filament\Resources\StaffAttendances\Tables\StaffAttendancesTable;
 use App\Models\StaffAttendance;
@@ -14,13 +14,13 @@ class StaffAttendanceResource extends Resource
 {
     protected static ?string $model = StaffAttendance::class;
 
-    protected static ?string $cluster = StaffPlanning::class;
+    protected static ?string $cluster = HumanResources::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-finger-print';
 
-    protected static ?string $navigationLabel = 'Pointage & Présences';
+    protected static ?string $navigationLabel = 'Pointages';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Pointage';
 

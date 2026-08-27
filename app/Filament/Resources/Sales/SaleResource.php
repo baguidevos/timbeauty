@@ -13,11 +13,11 @@ class SaleResource extends Resource
 {
     protected static ?string $model = Sale::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-receipt-percent';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Ventes';
+    protected static string|\UnitEnum|null $navigationGroup = 'Activités Salon';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $modelLabel = 'Vente';
 

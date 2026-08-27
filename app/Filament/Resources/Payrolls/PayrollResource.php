@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Payrolls;
 
+use App\Filament\Clusters\HumanResources;
 use App\Filament\Resources\Payrolls\Schemas\PayrollForm;
 use App\Filament\Resources\Payrolls\Tables\PayrollsTable;
 use App\Filament\Resources\Payrolls\Widgets\PayrollChartWidget;
@@ -15,11 +16,13 @@ class PayrollResource extends Resource
 {
     protected static ?string $model = Payroll::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
+    protected static ?string $cluster = HumanResources::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-currency-dollar';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?string $navigationLabel = 'Fiches de Paie';
+
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $modelLabel = 'Fiche de paie';
 

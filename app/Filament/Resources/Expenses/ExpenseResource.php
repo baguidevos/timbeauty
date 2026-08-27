@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Expenses;
 
+use App\Filament\Clusters\FinanceCluster;
 use App\Filament\Resources\Expenses\Schemas\ExpenseForm;
 use App\Filament\Resources\Expenses\Tables\ExpensesTable;
 use App\Models\Expense;
@@ -13,11 +14,13 @@ class ExpenseResource extends Resource
 {
     protected static ?string $model = Expense::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-receipt-percent';
+    protected static ?string $cluster = FinanceCluster::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-trending-down';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 4;
+
+    protected static ?string $navigationLabel = 'Dépenses';
 
     protected static ?string $modelLabel = 'Dépense';
 

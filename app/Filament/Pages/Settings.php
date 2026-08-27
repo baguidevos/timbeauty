@@ -15,7 +15,7 @@ class Settings extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Système';
+    protected static string|\UnitEnum|null $navigationGroup = 'Système & Pilotage';
 
     protected static ?int $navigationSort = 20;
 

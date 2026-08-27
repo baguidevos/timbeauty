@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseOrders;
 
-use App\Filament\Clusters\OrderManagement;
+use App\Filament\Clusters\CatalogCluster;
 use App\Filament\Resources\PurchaseOrders\Schemas\PurchaseOrderForm;
 use App\Filament\Resources\PurchaseOrders\Tables\PurchaseOrdersTable;
 use App\Models\PurchaseOrder;
@@ -14,13 +14,13 @@ class PurchaseOrderResource extends Resource
 {
     protected static ?string $model = PurchaseOrder::class;
 
-    protected static ?string $cluster = OrderManagement::class;
+    protected static ?string $cluster = CatalogCluster::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static ?string $navigationLabel = 'Commandes';
+    protected static ?string $navigationLabel = 'Bons de Commande';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $modelLabel = 'Commande d\'achat';
 

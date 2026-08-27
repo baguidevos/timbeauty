@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\LoyaltyPointTransactions;
 
+use App\Filament\Clusters\Marketing;
 use App\Filament\Resources\LoyaltyPointTransactions\Schemas\LoyaltyPointTransactionForm;
 use App\Filament\Resources\LoyaltyPointTransactions\Tables\LoyaltyPointTransactionsTable;
 use App\Models\LoyaltyPointTransaction;
@@ -13,13 +14,13 @@ class LoyaltyPointTransactionResource extends Resource
 {
     protected static ?string $model = LoyaltyPointTransaction::class;
 
-    protected static bool $shouldRegisterNavigation = false;
+    protected static ?string $cluster = Marketing::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrows-right-left';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static ?string $navigationLabel = 'Historique des Points';
 
-    protected static ?int $navigationSort = 55;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $modelLabel = 'Transaction de points';
 

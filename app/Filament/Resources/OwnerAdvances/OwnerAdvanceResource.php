@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\OwnerAdvances;
 
+use App\Filament\Clusters\FinanceCluster;
 use App\Filament\Resources\OwnerAdvances\Pages\ListOwnerAdvances;
 use App\Filament\Resources\OwnerAdvances\RelationManagers\RefundsRelationManager;
 use App\Filament\Resources\OwnerAdvances\Schemas\OwnerAdvanceForm;
@@ -15,11 +16,13 @@ class OwnerAdvanceResource extends Resource
 {
     protected static ?string $model = OwnerAdvance::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
+    protected static ?string $cluster = FinanceCluster::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Ventes';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-down-tray';
 
-    protected static ?int $navigationSort = 42;
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationLabel = 'Avances Propriétaire';
 
     protected static ?string $modelLabel = 'Avance Propriétaire';
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\LoyaltyTiers;
 
+use App\Filament\Clusters\Marketing;
 use App\Filament\Resources\LoyaltyTiers\Schemas\LoyaltyTierForm;
 use App\Filament\Resources\LoyaltyTiers\Tables\LoyaltyTiersTable;
 use App\Models\LoyaltyTier;
@@ -13,13 +14,13 @@ class LoyaltyTierResource extends Resource
 {
     protected static ?string $model = LoyaltyTier::class;
 
-    protected static bool $shouldRegisterNavigation = false;
+    protected static ?string $cluster = Marketing::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-trophy';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static ?string $navigationLabel = 'Niveaux de Fidélité';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Niveau de fidélité';
 

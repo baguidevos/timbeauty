@@ -23,11 +23,11 @@ use Illuminate\Support\Facades\DB;
 
 class Pos extends Page
 {
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-computer-desktop';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Ventes';
+    protected static string|\UnitEnum|null $navigationGroup = 'Activités Salon';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $navigationLabel = 'Point de Vente (POS)';
 

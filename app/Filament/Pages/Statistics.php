@@ -6,11 +6,11 @@ use Filament\Pages\Page;
 
 class Statistics extends Page
 {
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-pie';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Principal';
+    protected static string|\UnitEnum|null $navigationGroup = 'Système & Pilotage';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationLabel = 'Statistiques';
 

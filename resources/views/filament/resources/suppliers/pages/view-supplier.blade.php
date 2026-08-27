@@ -88,7 +88,7 @@
 
                 <!-- Action Button -->
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('filament.admin.order-management.resources.purchase-orders.index') }}" class="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-amber-500/20 transition hover:bg-amber-600">
+                    <a href="{{ \App\Filament\Resources\PurchaseOrders\PurchaseOrderResource::getUrl('index') }}" class="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-amber-500/20 transition hover:bg-amber-600">
                         <x-heroicon-m-plus class="h-4 w-4" />
                         <span>Nouvelle commande</span>
                     </a>
@@ -253,7 +253,7 @@
                                         @endphp
                                         <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition">
                                             <td class="p-3.5 font-bold text-amber-600 dark:text-amber-400">
-                                                <a href="{{ route('filament.admin.order-management.resources.purchase-orders.view', ['record' => $order->id]) }}" class="hover:underline">
+                                                <a href="{{ \App\Filament\Resources\PurchaseOrders\PurchaseOrderResource::getUrl('view', ['record' => $order->id]) }}" class="hover:underline">
                                                     {{ $order->reference }}
                                                 </a>
                                             </td>
@@ -275,7 +275,7 @@
                                                 </span>
                                             </td>
                                             <td class="p-3.5 text-right">
-                                                <a href="{{ route('filament.admin.order-management.resources.purchase-orders.view', ['record' => $order->id]) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 dark:text-amber-400 hover:underline">
+                                                <a href="{{ \App\Filament\Resources\PurchaseOrders\PurchaseOrderResource::getUrl('view', ['record' => $order->id]) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 dark:text-amber-400 hover:underline">
                                                     <span>Voir détail</span>
                                                     <x-heroicon-m-arrow-right class="h-3.5 w-3.5" />
                                                 </a>

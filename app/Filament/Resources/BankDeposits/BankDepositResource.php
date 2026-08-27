@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\BankDeposits;
 
+use App\Filament\Clusters\FinanceCluster;
 use App\Filament\Resources\BankDeposits\Pages\ListBankDeposits;
 use App\Filament\Resources\BankDeposits\Schemas\BankDepositForm;
 use App\Filament\Resources\BankDeposits\Tables\BankDepositsTable;
@@ -14,11 +15,13 @@ class BankDepositResource extends Resource
 {
     protected static ?string $model = BankDeposit::class;
 
+    protected static ?string $cluster = FinanceCluster::class;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-building-library';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Ventes';
+    protected static ?int $navigationSort = 2;
 
-    protected static ?int $navigationSort = 41;
+    protected static ?string $navigationLabel = 'Dépôts en Banque';
 
     protected static ?string $modelLabel = 'Dépôt en Banque';
 

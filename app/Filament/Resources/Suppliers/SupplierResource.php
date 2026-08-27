@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Suppliers;
 
-use App\Filament\Clusters\OrderManagement;
+use App\Filament\Clusters\CatalogCluster;
 use App\Filament\Resources\Suppliers\Schemas\SupplierForm;
 use App\Filament\Resources\Suppliers\Tables\SuppliersTable;
 use App\Models\Supplier;
@@ -14,13 +14,13 @@ class SupplierResource extends Resource
 {
     protected static ?string $model = Supplier::class;
 
-    protected static ?string $cluster = OrderManagement::class;
+    protected static ?string $cluster = CatalogCluster::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-truck';
 
     protected static ?string $navigationLabel = 'Fournisseurs';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 3;
 
     protected static ?string $modelLabel = 'Fournisseur';
 
