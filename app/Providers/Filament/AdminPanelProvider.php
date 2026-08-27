@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Resources\Expenses\Pages\ListExpenses;
 use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Services\Pages\ListServices;
+use App\Http\Middleware\EnsurePreviousCashRegisterIsClosed;
 use App\Models\Setting;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
@@ -131,6 +132,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsurePreviousCashRegisterIsClosed::class,
             ]);
     }
 }
