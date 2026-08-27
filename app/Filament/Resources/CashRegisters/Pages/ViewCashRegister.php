@@ -114,16 +114,6 @@ class ViewCashRegister extends ViewRecord
                             'status' => 'pending',
                         ]);
 
-                        $user = User::find($data['userId']);
-                        CashTransaction::create([
-                            'cashRegisterId' => $record->id,
-                            'type' => 'owner_contribution',
-                            'amount' => $data['amount'],
-                            'description' => 'Avance propriétaire : '.($user?->name ?? 'Propriétaire').' ('.$data['reason'].')',
-                            'referenceId' => 'ADV-'.$advance->id,
-                            'createdBy' => auth()->id(),
-                        ]);
-
                         Notification::make()
                             ->title('Apport propriétaire enregistré')
                             ->body('+'.FormatHelper::formatFCFA((float) $data['amount']).' ajoutés à la caisse.')

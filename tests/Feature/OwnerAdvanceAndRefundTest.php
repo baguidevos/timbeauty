@@ -64,14 +64,6 @@ test('owner refund reduces theoretical balance and updates advance status', func
         'createdBy' => $this->owner->id,
     ]);
 
-    CashTransaction::create([
-        'cashRegisterId' => $this->cashRegister->id,
-        'type' => 'owner_contribution',
-        'amount' => 50000,
-        'description' => 'Avance propriétaire',
-        'createdBy' => $this->owner->id,
-    ]);
-
     // Solde théorique = 70 000. Rembourser 30 000
     Livewire::test(ViewCashRegister::class, ['record' => $this->cashRegister->id])
         ->callAction('ownerRefund', [

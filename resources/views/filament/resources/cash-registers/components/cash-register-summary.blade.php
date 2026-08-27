@@ -31,12 +31,22 @@
 
     // Dépenses espèces
     $cashExpensesAmount = $expenses->where('paymentMethod', 'cash')->sum('amount');
-    
+
+    // Apports & Injections de trésorerie (Avances propriétaire, dépôts de caisse)
+    $extraInflows = (float) $record->transactions()
+        ->whereIn('type', ['deposit', 'owner_contribution', 'in'])
+        ->sum('amount');
+
+    // Sorties hors charges (Remises en banque / écrémages, remboursements propriétaire, retraits)
+    $extraOutflows = (float) $record->transactions()
+        ->whereIn('type', ['withdrawal', 'owner_refund', 'bank_deposit', 'out'])
+        ->sum('amount');
+
     // Solde d'ouverture
     $openingAmount = (float) ($record->openingAmount ?? 0);
-    
-    // Solde théorique
-    $theoreticalBalance = $openingAmount + $cashSalesAmount - $cashExpensesAmount;
+
+    // Solde théorique officiel
+    $theoreticalBalance = $record->getTheoreticalBalance();
 
 
     // 2. Bilan par type (Prestations vs Produits)
@@ -174,10 +184,57 @@
                 {{ \App\Helpers\FormatHelper::formatFCFA($theoreticalBalance) }}
             </div>
             <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                Ouverture + Ventes - Dépenses
+                @if ($extraInflows > 0 && $extraOutflows > 0)
+                    Ouverture + Ventes + Apports - Dépenses - Remises
+                @elseif ($extraInflows > 0)
+                    Ouverture + Ventes + Apports - Dépenses
+                @elseif ($extraOutflows > 0)
+                    Ouverture + Ventes - Dépenses - Remises
+                @else
+                    Ouverture + Ventes - Dépenses
+                @endif
             </p>
         </div>
     </div>
+
+    @if ($extraInflows > 0 || $extraOutflows > 0)
+        {{-- Mouvements de trésorerie complémentaires (Apports, Banques, etc.) --}}
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            @if ($extraInflows > 0)
+                <div class="flex items-center justify-between rounded-xl border border-purple-200 bg-purple-50/70 p-3.5 text-xs dark:border-purple-900/50 dark:bg-purple-950/30">
+                    <div class="flex items-center gap-2">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300">
+                            🤝
+                        </span>
+                        <div>
+                            <span class="font-bold text-purple-900 dark:text-purple-200">Apports & Avances de trésorerie</span>
+                            <p class="text-[11px] text-purple-700/80 dark:text-purple-300/80">Injections de fonds personnels</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm font-extrabold text-purple-700 dark:text-purple-300">+{{ \App\Helpers\FormatHelper::formatFCFA($extraInflows) }}</span>
+                    </div>
+                </div>
+            @endif
+
+            @if ($extraOutflows > 0)
+                <div class="flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50/70 p-3.5 text-xs dark:border-indigo-900/50 dark:bg-indigo-950/30">
+                    <div class="flex items-center gap-2">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
+                            🏦
+                        </span>
+                        <div>
+                            <span class="font-bold text-indigo-900 dark:text-indigo-200">Remises en Banque & Remboursements</span>
+                            <p class="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">Écrémages et remboursements</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm font-extrabold text-indigo-700 dark:text-indigo-300">-{{ \App\Helpers\FormatHelper::formatFCFA($extraOutflows) }}</span>
+                    </div>
+                </div>
+            @endif
+        </div>
+    @endif
 
     {{-- Bilan des Ventes par Type --}}
     <div class="overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
