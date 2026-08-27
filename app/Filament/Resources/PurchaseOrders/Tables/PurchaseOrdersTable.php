@@ -140,7 +140,7 @@ class PurchaseOrdersTable
                     ->label('Régler / Acompte')
                     ->icon('heroicon-o-banknotes')
                     ->color('success')
-                    ->modalWidth(Width::Medium)
+                    ->modalWidth(Width::Large)
                     ->modalHeading(fn (PurchaseOrder $record): string => "Règlement : {$record->reference}")
                     ->modalDescription('Enregistrez un paiement partiel (acompte) ou le règlement total de la commande.')
                     ->visible(fn (PurchaseOrder $record): bool => ! $record->isFullyPaid() && ! $record->isCancelled())

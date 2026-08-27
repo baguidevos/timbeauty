@@ -75,6 +75,26 @@ class OwnerAdvance extends Model
         $this->save();
     }
 
+    protected static function booted(): void
+    {
+        static::created(function (OwnerAdvance $advance): void {
+            if ($advance->cashRegisterId) {
+                CashTransaction::firstOrCreate(
+                    [
+                        'cashRegisterId' => $advance->cashRegisterId,
+                        'type' => 'owner_contribution',
+                        'referenceId' => (string) $advance->id,
+                    ],
+                    [
+                        'amount' => $advance->amount,
+                        'description' => 'Apport / Avance de trésorerie propriétaire #'.$advance->id.($advance->reason ? ' — '.$advance->reason : ''),
+                        'createdBy' => $advance->createdBy ?? auth()->id(),
+                    ]
+                );
+            }
+        });
+    }
+
     public function getActivityDescription(string $action): string
     {
         $amount = number_format((float) $this->amount, 0, ',', ' ');
