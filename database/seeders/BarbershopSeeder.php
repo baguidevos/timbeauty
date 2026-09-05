@@ -61,33 +61,35 @@ class BarbershopSeeder extends Seeder
         $now = now();
         $today = $now->toDateString();
 
+        $this->call(RolesAndPermissionsSeeder::class);
+
         // ─── Users ─────────────────────────────────────────────────────
         $admin = User::create([
             'name' => 'Admin Barbershop',
             'email' => 'admin@barbershop.com',
             'password' => Hash::make('password'),
-            'role' => 'admin',
             'phone' => '+228 90 12 34 56',
             'active' => true,
         ]);
+        $admin->assignRole(['super_admin', 'admin']);
 
         $cashier = User::create([
             'name' => 'Afi Sossou',
             'email' => 'caissier@barbershop.com',
             'password' => Hash::make('password'),
-            'role' => 'cashier',
             'phone' => '+228 91 23 45 67',
             'active' => true,
         ]);
+        $cashier->assignRole('cashier');
 
         $barberUser = User::create([
             'name' => 'Kofi Mensah',
             'email' => 'coiffeur@barbershop.com',
             'password' => Hash::make('password'),
-            'role' => 'barber',
             'phone' => '+228 92 34 56 78',
             'active' => true,
         ]);
+        $barberUser->assignRole('barber');
 
         // ─── Barbers ──────────────────────────────────────────────────
         $barber1 = Barber::create([

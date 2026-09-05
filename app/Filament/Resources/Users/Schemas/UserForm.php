@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -37,6 +38,12 @@ class UserForm
                             ->label('Téléphone')
                             ->tel()
                             ->maxLength(20),
+                        Select::make('roles')
+                            ->label('Rôles')
+                            ->relationship('roles', 'name')
+                            ->multiple()
+                            ->preload()
+                            ->searchable(),
                         Toggle::make('active')
                             ->label('Actif')
                             ->default(true),

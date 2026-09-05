@@ -30,6 +30,10 @@ class UsersTable
                     ->label('Téléphone')
                     ->searchable()
                     ->toggleable(),
+                TextColumn::make('roles.name')
+                    ->label('Rôles')
+                    ->badge()
+                    ->searchable(),
                 IconColumn::make('active')
                     ->label('Actif')
                     ->boolean()
@@ -41,6 +45,11 @@ class UsersTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('roles')
+                    ->relationship('roles', 'name')
+                    ->multiple()
+                    ->preload()
+                    ->label('Rôles'),
                 Tables\Filters\TernaryFilter::make('active')
                     ->label('Actif'),
             ])

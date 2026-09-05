@@ -10,11 +10,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
         'name',
@@ -65,29 +66,17 @@ class User extends Authenticatable implements FilamentUser
 
     public function isAdmin(): bool
     {
-        if (method_exists($this, 'hasRole')) {
-            return $this->hasRole('admin') || $this->hasRole('super_admin');
-        }
-
-        return true;
+        return $this->hasRole('admin') || $this->hasRole('super_admin');
     }
 
     public function isBarber(): bool
     {
-        if (method_exists($this, 'hasRole')) {
-            return $this->hasRole('barber');
-        }
-
-        return $this->barber()->exists();
+        return $this->hasRole('barber') || $this->barber()->exists();
     }
 
     public function isCashier(): bool
     {
-        if (method_exists($this, 'hasRole')) {
-            return $this->hasRole('cashier');
-        }
-
-        return ! $this->barber()->exists();
+        return $this->hasRole('cashier');
     }
 
     /**

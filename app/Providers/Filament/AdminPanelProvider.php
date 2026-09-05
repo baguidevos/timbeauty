@@ -129,11 +129,11 @@ class AdminPanelProvider extends PanelProvider
                 CalendarPlugin::make(),
                 // FilamentSpatieLaravelHealthPlugin::make(),
                 FilamentShieldPlugin::make()
-                    ->navigationLabel('Gestion des rôles')
-                    ->navigationGroup('Administration')
-                    ->navigationSort(1)
-                    ->navigationIcon('heroicon-o-users')
-                    ->activeNavigationIcon('heroicon-s-users'),
+                    ->navigationLabel('Rôles & Permissions')
+                    ->navigationGroup('Système & Pilotage')
+                    ->navigationSort(11)
+                    ->navigationIcon('heroicon-o-key')
+                    ->activeNavigationIcon('heroicon-s-key'),
             ])
             ->authMiddleware([
                 Authenticate::class,
