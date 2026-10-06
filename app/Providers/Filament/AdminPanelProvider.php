@@ -53,7 +53,7 @@ class AdminPanelProvider extends PanelProvider
                 'success' => Color::Emerald,
                 'warning' => Color::Amber,
             ])
-            ->brandName(fn () => Setting::get('shop_name', 'BarberShop Pro'))
+            ->brandName(fn () => Setting::get('shop_name', 'TimBeauty'))
             ->brandLogo(fn () => view('filament.components.brand-logo', ['isDark' => false]))
             ->darkModeBrandLogo(fn () => view('filament.components.brand-logo', ['isDark' => true]))
             ->brandLogoHeight('2.75rem')

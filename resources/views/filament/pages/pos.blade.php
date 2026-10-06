@@ -474,7 +474,7 @@
                                     <option value="">👤 {{ $hasServicesInCart ? 'Veuillez sélectionner ou créer un client...' : 'Client sans rendez-vous (Walk-in)' }}</option>
                                     @foreach($clients as $c)
                                         <option value="{{ $c->id }}">
-                                            {{ $c->getFullName() }} ({{ $c->phone }})
+                                            {{ $c->getFullName() }} {{ $c->code ? '['.$c->code.'] ' : '' }}({{ $c->phone }})
                                         </option>
                                     @endforeach
                                 </x-filament::input.select>

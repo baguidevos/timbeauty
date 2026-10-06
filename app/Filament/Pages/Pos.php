@@ -542,7 +542,7 @@ class Pos extends Page
             $this->clientId = $client->id;
 
             Notification::make()
-                ->title('Client '.$client->getFullName().' créé et sélectionné !')
+                ->title('Client '.$client->getFullName().($client->code ? ' ('.$client->code.')' : '').' créé et sélectionné !')
                 ->success()
                 ->send();
         }
@@ -967,7 +967,8 @@ class Pos extends Page
 
         if ($this->clientSearch) {
             $query->where(function ($q) {
-                $q->where('firstName', 'like', '%'.$this->clientSearch.'%')
+                $q->where('code', 'like', '%'.$this->clientSearch.'%')
+                    ->orWhere('firstName', 'like', '%'.$this->clientSearch.'%')
                     ->orWhere('lastName', 'like', '%'.$this->clientSearch.'%')
                     ->orWhere('phone', 'like', '%'.$this->clientSearch.'%');
             });

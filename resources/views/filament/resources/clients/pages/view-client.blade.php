@@ -33,6 +33,12 @@
                                 {{ $client->getFullName() }}
                             </h1>
 
+                            @if($client->code)
+                                <x-filament::badge color="info" icon="heroicon-m-identification" size="sm">
+                                    {{ $client->code }}
+                                </x-filament::badge>
+                            @endif
+
                             @if($stats['isBirthday'])
                                 <x-filament::badge color="danger" icon="heroicon-m-cake" size="sm">
                                     Anniversaire aujourd'hui 🎉 ({{ $stats['age'] }} ans)
@@ -58,6 +64,12 @@
 
                         <!-- Coordonnées & Contact rapide -->
                         <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+                            @if($client->code)
+                                <span class="flex items-center gap-1.5 font-mono font-semibold text-amber-600 dark:text-amber-400">
+                                    <x-heroicon-m-qr-code class="h-4 w-4" />
+                                    <span>{{ $client->code }}</span>
+                                </span>
+                            @endif
                             @if($client->phone)
                                 <a href="tel:{{ $client->phone }}" class="flex items-center gap-1.5 transition hover:text-amber-600 dark:hover:text-amber-400">
                                     <x-heroicon-m-phone class="h-4 w-4 text-gray-400" />

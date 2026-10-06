@@ -27,8 +27,8 @@ class SaleForm
                         Select::make('clientId')
                             ->label('Client')
                             ->relationship('client', 'firstName')
-                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->firstName.' '.$record->lastName.' ('.$record->phone.')')
-                            ->searchable()
+                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->firstName.' '.$record->lastName.($record->code ? " [{$record->code}]" : '').' ('.$record->phone.')')
+                            ->searchable(['code', 'firstName', 'lastName', 'phone'])
                             ->preload()
                             ->placeholder('👤 Client anonyme (Walk-in)'),
 

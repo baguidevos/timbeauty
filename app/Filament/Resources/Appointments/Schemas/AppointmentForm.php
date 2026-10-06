@@ -55,8 +55,8 @@ class AppointmentForm
                                 Select::make('clientId')
                                     ->label('Client')
                                     ->relationship('client', 'firstName')
-                                    ->getOptionLabelFromRecordUsing(fn (Client $record) => "{$record->firstName} {$record->lastName}".($record->phone ? " ({$record->phone})" : ''))
-                                    ->searchable(['firstName', 'lastName', 'phone'])
+                                    ->getOptionLabelFromRecordUsing(fn (Client $record) => "{$record->firstName} {$record->lastName}".($record->code ? " [{$record->code}]" : '').($record->phone ? " ({$record->phone})" : ''))
+                                    ->searchable(['code', 'firstName', 'lastName', 'phone'])
                                     ->preload()
                                     ->required()
                                     ->createOptionForm([

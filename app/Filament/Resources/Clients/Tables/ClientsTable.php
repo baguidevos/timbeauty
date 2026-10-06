@@ -19,6 +19,13 @@ class ClientsTable
 
         return $table
             ->columns([
+                TextColumn::make('code')
+                    ->label('Code')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable()
+                    ->badge()
+                    ->color('primary'),
                 TextColumn::make('firstName')
                     ->label('Prénom')
                     ->searchable()

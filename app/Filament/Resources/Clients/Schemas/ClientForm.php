@@ -23,6 +23,12 @@ class ClientForm
                         Tab::make('Informations personnelles')
                             ->icon(Heroicon::OutlinedUser)
                             ->schema([
+                                TextInput::make('code')
+                                    ->label('Code client')
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->placeholder('Généré automatiquement (ex: ES2233-1)')
+                                    ->columnSpanFull(),
                                 TextInput::make('firstName')
                                     ->label('Prénom')
                                     ->required()

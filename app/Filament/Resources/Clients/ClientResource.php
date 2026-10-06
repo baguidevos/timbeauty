@@ -27,7 +27,7 @@ class ClientResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['firstName', 'lastName', 'phone', 'whatsapp', 'email', 'address'];
+        return ['code', 'firstName', 'lastName', 'phone', 'whatsapp', 'email', 'address'];
     }
 
     public static function getGlobalSearchResultTitle(Model $record): string
@@ -40,6 +40,10 @@ class ClientResource extends Resource
     {
         /** @var Client $record */
         $details = [];
+
+        if ($record->code) {
+            $details['Code'] = $record->code;
+        }
 
         if ($record->phone) {
             $details['Téléphone'] = $record->phone;
