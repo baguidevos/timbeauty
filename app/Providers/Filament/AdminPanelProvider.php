@@ -46,7 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->profile(EditProfile::class, isSimple: false)
             ->spa(hasPrefetching: true)
-            ->registration()
+            // ->registration()
             ->maxContentWidth(Width::Full)
             ->colors([
                 'primary' => Color::Amber,
