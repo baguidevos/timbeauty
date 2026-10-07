@@ -162,6 +162,14 @@ class BarberForm
                                     ->numeric()
                                     ->visible(fn (Get $get) => in_array($get('remunerationType'), ['fixed', 'fixed_plus_commission'])),
                                 TextInput::make('commissionRate')
+                                    ->required()
+                                    ->validationMessages([
+                                        'required' => 'Le taux de commission est requis, 0 par defaut',
+                                        'numeric' => 'Le taux de commission doit être un nombre',
+                                        'step' => 'Le taux de commission doit être un nombre avec 2 décimales',
+                                        'min' => 'Le taux de commission doit être supérieur ou égal à 0',
+                                        'max' => 'Le taux de commission doit être inférieur ou égal à 100',
+                                    ])
                                     ->default(0)
                                     ->label('Taux de commission (%)')
                                     ->numeric()
