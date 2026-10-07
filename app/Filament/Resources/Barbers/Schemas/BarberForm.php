@@ -158,6 +158,14 @@ class BarberForm
                                     ->live()
                                     ->columnSpanFull(),
                                 TextInput::make('fixedSalary')
+                                    ->required()
+                                    ->validationMessages([
+                                        'required' => 'Le salaire fixe est requis, 0 par defaut',
+                                        'numeric' => 'Le salaire fixe doit être un nombre',
+                                        'step' => 'Le salaire fixe doit être un nombre avec 2 décimales',
+                                        'min' => 'Le salaire fixe doit être supérieur ou égal à 0',
+                                    ])
+                                    ->default(0)
                                     ->label('Salaire fixe (FCFA)')
                                     ->numeric()
                                     ->visible(fn (Get $get) => in_array($get('remunerationType'), ['fixed', 'fixed_plus_commission'])),
