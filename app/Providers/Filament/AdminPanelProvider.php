@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Resources\Expenses\Pages\ListExpenses;
 use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Services\Pages\ListServices;
@@ -42,6 +43,8 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
+            ->passwordReset()
+            ->profile(EditProfile::class, isSimple: false)
             ->spa(hasPrefetching: true)
             ->registration()
             ->maxContentWidth(Width::Full)
