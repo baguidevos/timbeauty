@@ -162,6 +162,7 @@ class BarberForm
                                     ->numeric()
                                     ->visible(fn (Get $get) => in_array($get('remunerationType'), ['fixed', 'fixed_plus_commission'])),
                                 TextInput::make('commissionRate')
+                                    ->default(0)
                                     ->label('Taux de commission (%)')
                                     ->numeric()
                                     ->step(0.01)

@@ -55,6 +55,7 @@ class ServiceForm
                             ]),
 
                         TextInput::make('commissionRate')
+                            ->default(0)
                             ->label('Taux de commission (%)')
                             ->numeric()
                             ->step(0.01)
