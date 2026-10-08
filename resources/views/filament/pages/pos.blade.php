@@ -823,13 +823,12 @@
 
                 <div class="space-y-1">
                     <label class="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        Numéro de téléphone <span class="text-rose-500">*</span>
+                        Numéro de téléphone <span class="text-xs text-gray-400 font-normal">(optionnel)</span>
                     </label>
                     <x-filament::input.wrapper :valid="! $errors->has('quickClientPhone')" prefix-icon="heroicon-m-phone">
                         <x-filament::input
                             wire:model="quickClientPhone"
                             type="tel"
-                            required
                             placeholder="ex: +228 90 12 34 56"
                         />
                     </x-filament::input.wrapper>

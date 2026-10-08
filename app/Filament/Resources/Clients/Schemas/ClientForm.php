@@ -40,10 +40,13 @@ class ClientForm
                                 TextInput::make('phone')
                                     ->label('Téléphone')
                                     ->tel()
+                                    ->default('+228 ')
+                                    ->placeholder('ex: +228 90 12 34 56')
                                     ->maxLength(20),
                                 TextInput::make('whatsapp')
                                     ->label('WhatsApp')
                                     ->tel()
+                                    ->placeholder('ex: +228 90 12 34 56')
                                     ->maxLength(20),
                                 TextInput::make('email')
                                     ->label('Email')

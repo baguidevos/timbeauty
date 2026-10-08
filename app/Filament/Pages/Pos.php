@@ -72,7 +72,7 @@ class Pos extends Page
 
     public string $quickClientLastName = '';
 
-    public string $quickClientPhone = '';
+    public string $quickClientPhone = '+228 ';
 
     public ?string $quickClientGender = 'male';
 
@@ -511,15 +511,17 @@ class Pos extends Page
         $this->validate([
             'quickClientFirstName' => 'required|string|max:100',
             'quickClientLastName' => 'required|string|max:100',
-            'quickClientPhone' => 'required|string|max:25',
+            'quickClientPhone' => 'nullable|string|max:25',
         ], [
             'quickClientFirstName.required' => 'Le prénom est requis.',
             'quickClientLastName.required' => 'Le nom est requis.',
-            'quickClientPhone.required' => 'Le numéro de téléphone est requis.',
         ]);
 
         $phone = trim($this->quickClientPhone);
-        $client = Client::where('phone', $phone)->first();
+        $cleanDigits = preg_replace('/\D/', '', $phone);
+        $hasRealPhone = $cleanDigits !== '' && $cleanDigits !== '228';
+
+        $client = $hasRealPhone ? Client::where('phone', $phone)->first() : null;
 
         if ($client) {
             $this->clientId = $client->id;
@@ -531,7 +533,7 @@ class Pos extends Page
             $client = Client::create([
                 'firstName' => trim($this->quickClientFirstName),
                 'lastName' => trim($this->quickClientLastName),
-                'phone' => $phone,
+                'phone' => $hasRealPhone ? $phone : null,
                 'gender' => $this->quickClientGender ?? 'male',
                 'firstVisitDate' => now()->toDateString(),
                 'lastVisitDate' => now()->toDateString(),
@@ -547,7 +549,8 @@ class Pos extends Page
                 ->send();
         }
 
-        $this->reset(['quickClientFirstName', 'quickClientLastName', 'quickClientPhone']);
+        $this->reset(['quickClientFirstName', 'quickClientLastName']);
+        $this->quickClientPhone = '+228 ';
         $this->quickClientGender = 'male';
         $this->showQuickClientModal = false;
         $this->clientSearch = '';

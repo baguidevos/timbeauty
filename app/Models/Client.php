@@ -93,6 +93,26 @@ class Client extends Model
         );
     }
 
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: function (?string $value) {
+                if ($value === null) {
+                    return null;
+                }
+
+                $trimmed = trim($value);
+                $digitsOnly = preg_replace('/\D/', '', $trimmed);
+
+                if ($digitsOnly === '' || $digitsOnly === '228') {
+                    return null;
+                }
+
+                return $trimmed;
+            },
+        );
+    }
+
     public function getFullName(): string
     {
         return trim("{$this->firstName} {$this->lastName}");

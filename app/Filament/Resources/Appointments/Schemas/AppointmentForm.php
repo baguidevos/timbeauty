@@ -71,6 +71,8 @@ class AppointmentForm
                                         TextInput::make('phone')
                                             ->label('Téléphone')
                                             ->tel()
+                                            ->default('+228 ')
+                                            ->placeholder('ex: +228 90 12 34 56')
                                             ->maxLength(20),
                                     ])
                                     ->createOptionUsing(function (array $data): int {

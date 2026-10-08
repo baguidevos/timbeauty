@@ -36,6 +36,7 @@ class ClientsTable
                     ->sortable(),
                 TextColumn::make('phone')
                     ->label('Téléphone')
+                    ->default('-')
                     ->searchable(),
                 TextColumn::make('email')
                     ->label('Email')
